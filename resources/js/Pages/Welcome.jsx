@@ -38,21 +38,16 @@ export default function Welcome({ auth }) {
             // Jika belum, arahkan ke halaman login
             router.get(route("login"));
         } else {
-            // Jika sudah, tampilkan pesan di console sebagai placeholder
-            // Ini adalah tempat kita akan menaruh logika checkout nanti
-            console.log(
-                `User ${auth.user.name} memulai checkout untuk ${quantity} item.`
-            );
-            alert(
-                `Memulai proses checkout untuk ${quantity} item! (Cek console log untuk detail)`
-            );
+            // Arahkan ke halaman checkout sambil membawa data kuantitas
+            // 'router.get' akan berpindah halaman tanpa full refresh
+            router.get(route('checkout'), { quantity: quantity });
         }
     };
 
     const bannerImages = [
         "/images/ikan-home.avif",
         "/images/banner2.jpg",
-        "/images/banner4.jpeg",
+        "/images/banner4.png",
     ];
 
     return (
