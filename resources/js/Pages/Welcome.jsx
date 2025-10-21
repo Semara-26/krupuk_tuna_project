@@ -9,7 +9,7 @@ import { Head, router } from "@inertiajs/react";
 import { useState } from "react";
 
 // 'auth' akan otomatis dikirim oleh Laravel dari routes/web.php
-export default function Welcome({ auth }) {
+export default function Welcome({ auth}) {
     // Buat state untuk menyimpan jumlah kuantitas, defaultnya 1
     const [quantity, setQuantity] = useState(1);
 

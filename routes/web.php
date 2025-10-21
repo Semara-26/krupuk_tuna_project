@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\Controller;
+use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
@@ -20,6 +22,8 @@ Route::get('/', function () {
         ],
     ]);
 })->name('home');;
+
+Route::get('/coba', [CustomerController::class, 'getData']);
 
 Route::get('/undian', function () {
     // Untuk sekarang, kita kirim data pura-pura (dummy data) ke frontend.
