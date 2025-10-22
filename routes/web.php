@@ -23,7 +23,7 @@ Route::get('/', function () {
     ]);
 })->name('home');;
 
-Route::get('/coba', [CustomerController::class, 'getData']);
+Route::post('/customer/checkout', [CustomerController::class, 'create'])->name('customer.create');
 
 Route::get('/undian', function () {
     // Untuk sekarang, kita kirim data pura-pura (dummy data) ke frontend.
@@ -56,11 +56,29 @@ Route::get('/lacak', function () {
         $statusPesanan = ['error' => 'Nomor pesanan tidak ditemukan.'];
     }
 
+    // Siapkan data riwayat pesanan (dummy data)
+    $riwayatPesanan = [];
+    if (Auth::check()) { // Cek jika user sudah login
+        $riwayatPesanan = [
+            ['id' => 'KT-09876', 'tanggal' => '18 Okt 2025', 'status' => 'Selesai', 'total' => 'Rp 50.000'],
+            ['id' => 'KT-09875', 'tanggal' => '15 Okt 2025', 'status' => 'Selesai', 'total' => 'Rp 25.000'],
+        ];
+    }
+
     return Inertia::render('Lacak', [
         'statusPesanan' => $statusPesanan,
         'input' => request()->only('nomor_pesanan'), // Kirim kembali input user
+        'riwayatPesanan' => $riwayatPesanan
     ]);
 })->name('lacak');
+
+Route::get('/checkout', function () {
+    // Render halaman Checkout.jsx dan kirim data kuantitas dari URL
+    return Inertia::render('Checkout', [
+        'quantity' => request()->query('quantity', 1) // default 1 jika tidak ada
+    ]);
+    // 'middleware' memastikan hanya user yang sudah login & terverifikasi yang bisa akses
+})->middleware(['auth', 'verified'])->name('checkout');
 
 Route::get('/dashboard', function () {
     return Inertia::render('Dashboard');
