@@ -12,10 +12,6 @@ use phpDocumentor\Reflection\PseudoTypes\False_;
 class CustomerController extends Controller
 {
     //
-    public function getData(){
-        return Inertia::render('coba', ['data' => "hello world"]);
-    }
-
     public function create(Request $request){
         $validatedData = $request->validate([
            'data.full_name' => 'required|max:255',

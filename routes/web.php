@@ -1,27 +1,28 @@
 <?php
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\CourierController;
 use App\Http\Controllers\CustomerController;
+use App\Http\Controllers\LandingPageController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Http\Request; // Kita mungkin butuh ini nanti
+use Illuminate\Support\Facades\Log; // Untuk logging sementara
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Auth;
 
-Route::get('/', function () {
-    return Inertia::render('Welcome', [
-        'canLogin' => Route::has('login'),
-        'canRegister' => Route::has('register'),
-        'laravelVersion' => Application::VERSION,
-        'phpVersion' => PHP_VERSION,
-        // --- TAMBAHAN ---
-        // Kirim data user (atau null jika guest) ke frontend
-        // Ini dibutuhkan oleh AuthenticatedLayout.jsx untuk menampilkan "Profile" atau "Login"
-        'auth' => [
-            'user' => Auth::user(), // Ini data user (atau null kalau belum login)
-        ],
-    ]);
-})->name('home');;
+Route::get('/', [LandingPageController::class, 'index'])->name('home');
+
+Route::get('/get-province-data', [CourierController::class, 'getProvince'])->name('province.get');
+
+//route buat ngambil data kota dari provinsi_id
+Route::get('/get-city-data/{province_id}', [LandingPageController::class, 'getCity'])->name('city.get');
+
+//route buat ngambil data kabupaten dari city_id
+Route::get('get-district-data/{city_id}', [LandingPageController::class, 'getDistrict'])->name('district.get');
+//nah, ini ngambil list total jasa kurir ama mang kurirnya
+Route::get('get-courier/{district_id}', [LandingPageController::class, 'getCalculatedCost'])->name('cost.get');
 
 Route::post('/customer/checkout', [CustomerController::class, 'create'])->name('customer.create');
 
@@ -72,13 +73,19 @@ Route::get('/lacak', function () {
     ]);
 })->name('lacak');
 
-Route::get('/checkout', function () {
-    // Render halaman Checkout.jsx dan kirim data kuantitas dari URL
-    return Inertia::render('Checkout', [
-        'quantity' => request()->query('quantity', 1) // default 1 jika tidak ada
-    ]);
-    // 'middleware' memastikan hanya user yang sudah login & terverifikasi yang bisa akses
-})->middleware(['auth', 'verified'])->name('checkout');
+// --- DITAMBAHKAN: Route baru untuk memproses form dari popup ---
+Route::post('/order-popup', function (Request $request) {
+    // Nanti tim backend akan menyimpan data ini ke database
+    Log::info('Order data received via popup:', $request->all()); // Contoh logging
+
+     // DIUBAH: Jangan return JSON. Cukup redirect kembali.
+    // Inertia akan mendeteksi ini sebagai sukses dan memicu onSuccess di frontend.
+    return back();
+    // Jika ada error validasi, backend bisa return:
+    // return back()->withErrors(['field_name' => 'Pesan error']);
+
+})->name('order.store.popup');
+
 
 Route::get('/dashboard', function () {
     return Inertia::render('Dashboard');

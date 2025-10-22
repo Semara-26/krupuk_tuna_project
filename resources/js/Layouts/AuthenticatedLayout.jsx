@@ -154,62 +154,45 @@ export default function AuthenticatedLayout({ auth, children }) {
                     </div>
                 </div>
 
-                {/* ===== PERUBAHAN UTAMA DI SINI (MOBILE) ===== */}
-                <div
-                    className={
-                        (showingNavigationDropdown ? "block" : "hidden") +
-                        " sm:hidden"
-                    }
-                >
+                {/* --- PERUBAHAN UTAMA DI SINI (MOBILE MENU) --- */}
+                 <div className={`sm:hidden transition-all duration-500 ease-in-out overflow-hidden ${showingNavigationDropdown ? 'max-h-screen' : 'max-h-0'}`}>
+                    {/* Menu Utama Mobile */}
                     <div className="pt-2 pb-3 space-y-1">
-                        <ResponsiveNavLink
-                            href={route("home")}
-                            active={route().current("home")}
-                        >
-                            Home
-                        </ResponsiveNavLink>
-                        {/* DIKEMBALIKAN: Link Lacak Mobile */}
-                        <ResponsiveNavLink
-                            href={route("lacak")}
-                            active={route().current("lacak")}
-                        >
-                            Lacak
-                        </ResponsiveNavLink>
-                        <ResponsiveNavLink
-                            href={route("undian")}
-                            active={route().current("undian")}
-                        >
-                            Undian
-                        </ResponsiveNavLink>
+                        <ResponsiveNavLink href={route('home')} active={route().current('home')}>Home</ResponsiveNavLink>
+                        <ResponsiveNavLink href={route('lacak')} active={route().current('lacak')}>Lacak</ResponsiveNavLink>
+                        <ResponsiveNavLink href={route('undian')} active={route().current('undian')}>Undian</ResponsiveNavLink>
                     </div>
 
-                    {/* Tampilkan menu profile di mobile jika user sudah login */}
-                    {user && (
-                        <div className="pt-4 pb-1 border-t border-gray-200">
-                            <div className="px-4">
-                                <div className="font-medium text-base text-gray-800">
-                                    {user.name}
+                    {/* Menu User Mobile */}
+                    <div className="pt-4 pb-1 border-t border-gray-200">
+                        {user ? (
+                            // Jika SUDAH login
+                            <>
+                                <div className="px-4">
+                                    <div className="font-medium text-base text-gray-800">{user.name}</div>
+                                    <div className="font-medium text-sm text-gray-500">{user.email}</div>
                                 </div>
-                                <div className="font-medium text-sm text-gray-500">
-                                    {user.email}
+                                <div className="mt-3 space-y-1">
+                                    <ResponsiveNavLink href={route('profile.edit')}>Profile</ResponsiveNavLink>
+                                    <ResponsiveNavLink method="post" href={route('logout')} as="button">
+                                        Log Out
+                                    </ResponsiveNavLink>
                                 </div>
-                            </div>
-                            <div className="mt-3 space-y-1">
-                                <ResponsiveNavLink href={route("profile.edit")}>
-                                    Profile
+                            </>
+                        ) : (
+                            // Jika BELUM login
+                            <div className="space-y-1">
+                                <ResponsiveNavLink href={route('login')} active={route().current('login')}>
+                                    Log In
                                 </ResponsiveNavLink>
-                                <ResponsiveNavLink
-                                    method="post"
-                                    href={route("logout")}
-                                    as="button"
-                                >
-                                    Log Out
+                                <ResponsiveNavLink href={route('register')} active={route().current('register')}>
+                                    Register
                                 </ResponsiveNavLink>
                             </div>
-                        </div>
-                    )}
+                        )}
+                    </div>
                 </div>
-                {/* ===== SELESAI PERUBAHAN MOBILE ===== */}
+                 {/* --- SELESAI PERUBAHAN MOBILE MENU --- */}
             </nav>
 
             <main className="flex-grow">{children}</main>
