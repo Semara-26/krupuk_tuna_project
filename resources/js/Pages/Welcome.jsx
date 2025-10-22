@@ -34,7 +34,7 @@ export default function Welcome({ auth, provinces}) {
     const bannerImages = [
         '/images/ikan-home.avif',
         '/images/banner2.jpg',
-        '/images/banner3.jpg',
+        '/images/banner4.png',
     ];
 
     return (
