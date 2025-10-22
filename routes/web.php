@@ -3,6 +3,8 @@
 use App\Http\Controllers\ProfileController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Http\Request; // Kita mungkin butuh ini nanti
+use Illuminate\Support\Facades\Log; // Untuk logging sementara
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Auth;
 
@@ -68,13 +70,19 @@ Route::get('/lacak', function () {
     ]);
 })->name('lacak');
 
-Route::get('/checkout', function () {
-    // Render halaman Checkout.jsx dan kirim data kuantitas dari URL
-    return Inertia::render('Checkout', [
-        'quantity' => request()->query('quantity', 1) // default 1 jika tidak ada
-    ]);
-    // 'middleware' memastikan hanya user yang sudah login & terverifikasi yang bisa akses
-})->middleware(['auth', 'verified'])->name('checkout');
+// --- DITAMBAHKAN: Route baru untuk memproses form dari popup ---
+Route::post('/order-popup', function (Request $request) {
+    // Nanti tim backend akan menyimpan data ini ke database
+    Log::info('Order data received via popup:', $request->all()); // Contoh logging
+
+     // DIUBAH: Jangan return JSON. Cukup redirect kembali.
+    // Inertia akan mendeteksi ini sebagai sukses dan memicu onSuccess di frontend.
+    return back();
+    // Jika ada error validasi, backend bisa return:
+    // return back()->withErrors(['field_name' => 'Pesan error']);
+
+})->name('order.store.popup');
+
 
 Route::get('/dashboard', function () {
     return Inertia::render('Dashboard');
