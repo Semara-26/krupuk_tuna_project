@@ -224,19 +224,24 @@ export default function OrderModal({ show, onClose, quantity }) {
     };
 
     const handleCourierChange = (e) => {
-        const courierId = e.target.value;
-        setData("kurir", courierId); // Simpan ID kurir ke form
+        // 1. Ini isinya 'uniqueKey' (misal: "jne-REG")
+        const uniqueValue = e.target.value;
 
-        if (!courierId) {
+        // 2. Simpan uniqueValue ke form (atau 'code'-nya saja, terserah backend)
+        //    Untuk amannya, kita simpan 'uniqueValue'
+        setData("kurir", uniqueValue);
+
+        if (!uniqueValue) {
             setSelectedOngkir(0);
             return;
         }
 
-        // Cari kurir yang dipilih dari state 'couriers'
-        // Pastikan perbandingan aman (string vs number)
-        const selected = couriers.find((c) => c.code == courierId);
+        // 3. Ubah logika .find()
+        const selected = couriers.find(
+            (c) => `${c.code}-${c.service}` == uniqueValue
+        );
 
-        // Jika ketemu dan ada key 'cost', update state ongkir
+        // 4. Kode di bawah ini sekarang aman dan tidak perlu diubah
         if (selected && typeof selected.cost === "number") {
             setSelectedOngkir(selected.cost);
         } else {
@@ -408,15 +413,21 @@ export default function OrderModal({ show, onClose, quantity }) {
                                         ? "Pilih Kecamatan Dulu"
                                         : "Pilih Kurir"}
                                 </option>
-                                {couriers.map((courier) => (
-                                    <option
-                                        key={courier.code}
-                                        value={courier.code}
-                                    >
-                                        {courier.name} ({courier.service}) -{" "}
-                                        {formatRupiah(courier.cost)}
-                                    </option>
-                                ))}
+                                {couriers.map((courier) => {
+                                    // 1. Buat ID unik, contoh: "jne-REG"
+                                    const uniqueKey = `${courier.code}-${courier.service}`;
+
+                                    return (
+                                        <option
+                                            key={uniqueKey}
+                                            value={uniqueKey}
+                                        >
+                                            {/* Tampilkan nama dan service-nya */}
+                                            {courier.name} ({courier.service}) -{" "}
+                                            {formatRupiah(courier.cost)}
+                                        </option>
+                                    );
+                                })}
                             </select>
                             <InputError
                                 message={errors.kurir}
