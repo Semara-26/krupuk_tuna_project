@@ -7,9 +7,10 @@ import InputError from "@/Components/InputError";
 import { useForm } from "@inertiajs/react";
 
 // Terima props: 'show' (apakah modal tampil), 'onClose' (fungsi menutup modal), 'quantity' (jumlah pesanan)
-export default function OrderModal({ show, onClose, quantity }) {
-    //buat provinsinya
+export default function OrderModal({ show, onClose, quantity, auth }) {
+    //buat provincenya
     const [provinces, setProvinces] = useState([]);
+    const [provData, setProvData] = useState([]);
 
     // State untuk mengontrol tampilan modal: 'form' atau 'paymentInfo'
     const [step, setStep] = useState("form");
@@ -18,9 +19,9 @@ export default function OrderModal({ show, onClose, quantity }) {
     // Harga per item (nanti bisa diambil dari backend)
     const hargaPerPaket = 50000;
     const totalHargaProduk = hargaPerPaket * quantity;
-    // Ongkir dummy (ini HARUS dikalkulasi backend nantinya berdasarkan kurir & alamat)
+    // Ongkir dummy (ini HARUS dikalkulasi backend nantinya berdasarkan courier & alamat)
     const ongkir = 25000; // Contoh ongkir
-    const totalTermasukOngkir = totalHargaProduk + ongkir;
+    // const totalTermasukOngkir = totalHargaProduk + ongkir;
     // Kupon dummy (misal 1 kupon per 2 paket)
     const kuponUndian = Math.floor(quantity / 2);
 
@@ -34,16 +35,17 @@ export default function OrderModal({ show, onClose, quantity }) {
         reset,
         recentlySuccessful,
     } = useForm({
-        nama_lengkap: "",
-        no_hp: "",
+        user_id: auth?.user?.id ?? null,
+        full_name: "",
+        phone: "",
         email: "",
-        provinsi: "",
-        kabupaten: "",
-        kota: "",
-        alamat_lengkap: "",
-        kurir: "", // Field baru sesuai PDF
+        province: "",
+        province_id:"",
+        district: "",
+        city: "",
+        address: "",
+        courier: "",
         quantity: quantity,
-        total_harga: totalTermasukOngkir, // Kirim total akhir ke backend
     });
 
     // Update quantity di form jika prop quantity berubah (misal user ganti di halaman utama)
@@ -84,7 +86,7 @@ export default function OrderModal({ show, onClose, quantity }) {
         }).format(number);
     };
 
-    //bang ini aku pake axios, jadi pas webnya pertama dijalanin dia bakal ngefetch data provinsi dulu,
+    //bang ini aku pake axios, jadi pas webnya pertama dijalanin dia bakal ngefetch data province dulu,
     //harusnya ngefetch data yang lain ngga pake useeffect ntah sih frontend membuatku gila
     useEffect(() => {
         const fetchProvinces = async () => {
@@ -102,24 +104,28 @@ export default function OrderModal({ show, onClose, quantity }) {
         fetchProvinces();
     }, []);
 
-    //Ini ketrigger waktu user dah milih provinsinya
+    //Ini ketrigger waktu user dah milih provincenya
     //nah ini untuk abang buat lanjutin, mataku dah perih bejir. routenya ada di Route.php
 
     const handleProvinceChange = async (e) => {
-        console.log(e.target.value)
-        // const provinceId = e.target.value;
-        // setData("provinsi", provinceId);
+        console.log(e.target.options[e.target.selectedIndex].text);
+        const provinceId = e.target.value;
+        const provinceName = e.target.options[e.target.selectedIndex].text;
+        setData("province_id", provinceId);
+        setData("province", provinceName);
         // setCities([]);
         // setDistricts([]);
         // setCouriers([]);
 
-        // try {
-        //     const res = await axios.get(`/get-city-data/${provinceId}`);
-        //     console.log("City response:", res.data);
-        //     setCities(res.data.data.data);
-        // } catch (err) {
-        //     console.error("Failed to load cities:", err);
-        // }
+        try {
+            //yang ini abis ketemu id provinsinya dia bakal ke route ini
+            //buat ngambil data kotanya
+            const res = await axios.get(`/get-city-data/${provinceId}`);
+            console.log("City response:", res.data);
+            // setCities(res.data.data.data);
+        } catch (err) {
+            console.error("Failed to load cities:", err);
+        }
     };
     return (
         <Modal show={show} onClose={handleClose} maxWidth="md">
@@ -156,15 +162,15 @@ export default function OrderModal({ show, onClose, quantity }) {
                     {/* Input Fields */}
                     <div className="space-y-3">
                         <div>
-                            <InputLabel htmlFor="provinsi" value="Provinsi" />
+                            <InputLabel htmlFor="province" value="province" />
                             <select
-                                id="provinsi"
-                                value={data.provinsi}
+                                id="province"
+                                value={data.province_id}
                                 onChange={handleProvinceChange}
                                 className="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm"
                                 required
                             >
-                                <option value="">Pilih Provinsi</option>
+                                <option value="">Pilih province</option>
                                 {provinces.map((prov) => (
                                     <option key={prov.id} value={prov.id}>
                                         {prov.name}
@@ -172,47 +178,47 @@ export default function OrderModal({ show, onClose, quantity }) {
                                 ))}
                             </select>
                             <InputError
-                                message={errors.provinsi}
+                                message={errors.province}
                                 className="mt-2"
                             />
                         </div>
 
                         <div>
-                            <InputLabel htmlFor="kabupaten" value="Kabupaten" />
+                            <InputLabel htmlFor="district" value="district" />
                             <select
-                                id="kabupaten"
-                                value={data.kabupaten}
+                                id="district"
+                                value={data.district}
                                 onChange={(e) =>
-                                    setData("kabupaten", e.target.value)
+                                    setData("district", e.target.value)
                                 }
                                 className="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm"
                                 required
                             >
-                                <option value="">Pilih Kabupaten</option>
+                                <option value="">Pilih district</option>
                                 <option value="badung">Badung</option>
                                 <option value="gianyar">Gianyar</option>
                                 <option value="tabanan">Tabanan</option>
                                 <option value="buleleng">Buleleng</option>
-                                {/* Add more kabupaten as needed */}
+                                {/* Add more district as needed */}
                             </select>
                             <InputError
-                                message={errors.kabupaten}
+                                message={errors.district}
                                 className="mt-2"
                             />
                         </div>
 
                         <div>
-                            <InputLabel htmlFor="kota" value="Kota/Kecamatan" />
+                            <InputLabel htmlFor="city" value="city/Kecamatan" />
                             <select
-                                id="kota"
-                                value={data.kota}
+                                id="city"
+                                value={data.city}
                                 onChange={(e) =>
-                                    setData("kota", e.target.value)
+                                    setData("city", e.target.value)
                                 }
                                 className="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm"
                                 required
                             >
-                                <option value="">Pilih Kota/Kecamatan</option>
+                                <option value="">Pilih city/Kecamatan</option>
                                 <option value="denpasar">Denpasar</option>
                                 <option value="kuta">Kuta</option>
                                 <option value="ubud">Ubud</option>
@@ -220,83 +226,86 @@ export default function OrderModal({ show, onClose, quantity }) {
                                 {/* Add more cities as needed */}
                             </select>
                             <InputError
-                                message={errors.kota}
+                                message={errors.city}
                                 className="mt-2"
                             />
                         </div>
 
                         <div>
                             <InputLabel
-                                htmlFor="alamat_lengkap"
+                                htmlFor="address"
                                 value="Alamat Lengkap"
                             />
                             <TextInput
-                                id="alamat_lengkap"
-                                value={data.alamat_lengkap}
+                                id="address"
+                                value={data.address}
                                 onChange={(e) =>
-                                    setData("alamat_lengkap", e.target.value)
+                                    setData("address", e.target.value)
                                 }
                                 className="mt-1 block w-full"
                                 required
                             />
                             <InputError
-                                message={errors.alamat_lengkap}
+                                message={errors.address}
                                 className="mt-2"
                             />
                         </div>
                         <div>
                             {/* Nanti ini bisa jadi <select> atau input autocomplete */}
-                            <InputLabel htmlFor="kurir" value="Pilih Kurir" />
+                            <InputLabel
+                                htmlFor="courier"
+                                value="Pilih courier"
+                            />
                             <TextInput
-                                id="kurir"
-                                value={data.kurir}
+                                id="courier"
+                                value={data.courier}
                                 onChange={(e) =>
-                                    setData("kurir", e.target.value)
+                                    setData("courier", e.target.value)
                                 }
                                 className="mt-1 block w-full"
                                 placeholder="Contoh: JNE Reguler / SiCepat"
                                 required
                             />
                             <InputError
-                                message={errors.kurir}
+                                message={errors.courier}
                                 className="mt-2"
                             />
                         </div>
                         <hr className="my-4" />
                         <div>
                             <InputLabel
-                                htmlFor="nama_lengkap"
+                                htmlFor="full_name"
                                 value="Nama Sesuai KTP"
                             />
                             <TextInput
-                                id="nama_lengkap"
-                                value={data.nama_lengkap}
+                                id="full_name"
+                                value={data.full_name}
                                 onChange={(e) =>
-                                    setData("nama_lengkap", e.target.value)
+                                    setData("full_name", e.target.value)
                                 }
                                 className="mt-1 block w-full"
                                 required
                             />
                             <InputError
-                                message={errors.nama_lengkap}
+                                message={errors.full_name}
                                 className="mt-2"
                             />
                         </div>
                         <div>
-                            <InputLabel htmlFor="no_hp" value="No Whatsapp" />
+                            <InputLabel htmlFor="phone" value="No Whatsapp" />
                             <TextInput
-                                id="no_hp"
+                                id="phone"
                                 type="tel"
-                                value={data.no_hp}
+                                value={data.phone}
                                 onChange={(e) =>
-                                    setData("no_hp", e.target.value)
+                                    setData("phone", e.target.value)
                                 }
                                 className="mt-1 block w-full"
                                 required
                                 placeholder="Contoh: 08123456789"
                             />
                             <InputError
-                                message={errors.no_hp}
+                                message={errors.phone}
                                 className="mt-2"
                             />
                         </div>
@@ -330,7 +339,7 @@ export default function OrderModal({ show, onClose, quantity }) {
                         </p>
                         <p className="flex justify-between font-bold text-lg mt-2">
                             <span>Total Termasuk Ongkir:</span>{" "}
-                            <span>{formatRupiah(totalTermasukOngkir)}</span>
+                            <span>{formatRupiah(75000)}</span>
                         </p>
                         <p className="flex justify-between text-green-600 mt-1">
                             <span>Free Kupon Undian:</span>{" "}
@@ -356,7 +365,7 @@ export default function OrderModal({ show, onClose, quantity }) {
                     </p>
                     {/* Tampilkan total dari kalkulasi sebelumnya */}
                     <p className="text-3xl font-bold text-red-600 mb-4">
-                        {formatRupiah(totalTermasukOngkir)}
+                        {formatRupiah(75000)}
                     </p>
 
                     <div className="bg-gray-50 rounded-lg p-4 my-4 border text-left max-w-xs mx-auto text-sm">

@@ -8,7 +8,8 @@ import 'swiper/css/navigation';
 import 'swiper/css/pagination';
 import OrderModal from '@/Components/OrderModal'; // 1. Impor komponen modal yang baru dibuat
 
-export default function Welcome({ auth, provinces}) {
+export default function Welcome({ auth}) {
+
     const [quantity, setQuantity] = useState(1);
     // 2. Tambahkan state baru untuk mengontrol kapan modal muncul
     const [showOrderModal, setShowOrderModal] = useState(false);
@@ -63,7 +64,6 @@ export default function Welcome({ auth, provinces}) {
                 </Swiper>
             </div>
 
-
             <div className="max-w-7xl mx-auto py-16 px-4">
                 <h2 className="text-3xl font-bold text-center text-gray-900 mb-8">
                     Pesan Krupuk Tuna Sekarang!
@@ -98,7 +98,7 @@ export default function Welcome({ auth, provinces}) {
                 show={showOrderModal}
                 onClose={closeModal}
                 quantity={quantity}
-                provinces={provinces}
+                auth={auth}
             />
         </AuthenticatedLayout>
     );

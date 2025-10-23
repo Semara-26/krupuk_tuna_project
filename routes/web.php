@@ -1,8 +1,9 @@
 <?php
 
+use App\Http\Controllers\AdminLoginController;
+use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\CourierController;
-use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\LandingPageController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Foundation\Application;
@@ -14,23 +15,41 @@ use Illuminate\Support\Facades\Auth;
 
 Route::get('/', [LandingPageController::class, 'index'])->name('home');
 
-Route::get('/get-province-data', [CourierController::class, 'getProvince'])->name('province.get');
 
-//route buat ngambil data kota dari provinsi_id
-Route::get('/get-city-data/{province_id}', [LandingPageController::class, 'getCity'])->name('city.get');
+Route::controller(CourierController::class)->group(function () {
+    Route::get('/get-province-data', 'getProvince')->name('province.get');
+    //route buat ngambil data kota dari provinsi_id
+    Route::get('/get-city-data/{province_id}', 'getCity')->name('city.get');
+    //route buat ngambil data kabupaten dari city_id
+    Route::get('get-district-data/{city_id}', 'getDistrict')->name('district.get');
+    //nah, ini ngambil list total jasa kurir ama mang kurirnya
+    Route::get('get-courier/{district_id}', 'getCalculatedCost')->name('cost.get');
+});
 
-//route buat ngambil data kabupaten dari city_id
-Route::get('get-district-data/{city_id}', [LandingPageController::class, 'getDistrict'])->name('district.get');
-//nah, ini ngambil list total jasa kurir ama mang kurirnya
-Route::get('get-courier/{district_id}', [LandingPageController::class, 'getCalculatedCost'])->name('cost.get');
+Route::post('/customer/checkout', [CheckoutController::class, 'create'])->name('order.store.popup');
 
-Route::post('/customer/checkout', [CustomerController::class, 'create'])->name('customer.create');
+// --- DITAMBAHKAN: Route baru untuk memproses form dari popup ---
+// Route::post('/order-popup', function (Request $request) {
+//     // Nanti tim backend akan menyimpan data ini ke database
+//     Log::info('Order data received via popup:', $request->all()); // Contoh logging
+
+//     // DIUBAH: Jangan return JSON. Cukup redirect kembali.
+//     // Inertia akan mendeteksi ini sebagai sukses dan memicu onSuccess di frontend.
+//     return back();
+//     // Jika ada error validasi, backend bisa return:
+//     // return back()->withErrors(['field_name' => 'Pesan error']);
+
+// })->name('order.store.popup');
+
+
+
+
 
 Route::get('/undian', function () {
     // Untuk sekarang, kita kirim data pura-pura (dummy data) ke frontend.
     // Nanti tim backend yang akan ganti ini dengan data asli dari database.
     // Nanti, tim backend akan mengambil tanggal ini dari database.
-    $tanggalBerikutnya = "Sabtu, 1 Desember 2025"; 
+    $tanggalBerikutnya = "Sabtu, 1 Desember 2025";
     return Inertia::render('Undian', [
         'tanggalUndian' => $tanggalBerikutnya,
         'pemenang' => [
@@ -39,13 +58,13 @@ Route::get('/undian', function () {
             ['id' => 3, 'nomor_kupon' => 'KT-912345', 'nama' => 'Cahyo Aji', 'hadiah' => 'Voucher Belanja'],
         ]
     ]);
-})->name('undian'); 
+})->name('undian');
 
 Route::get('/lacak', function () {
     // Nanti, tim backend akan mencari data ini di database berdasarkan input.
     // Untuk sekarang, kita buat data pura-pura (dummy data).
     $statusPesanan = null;
-    if (request() -> has('nomor_pesanan') && request()->input('nomor_pesanan') === 'KT-12345') {
+    if (request()->has('nomor_pesanan') && request()->input('nomor_pesanan') === 'KT-12345') {
         $statusPesanan = [
             'nomor' => 'KT-12345',
             'status' => 'Sedang Dikemas',
@@ -73,18 +92,6 @@ Route::get('/lacak', function () {
     ]);
 })->name('lacak');
 
-// --- DITAMBAHKAN: Route baru untuk memproses form dari popup ---
-Route::post('/order-popup', function (Request $request) {
-    // Nanti tim backend akan menyimpan data ini ke database
-    Log::info('Order data received via popup:', $request->all()); // Contoh logging
-
-     // DIUBAH: Jangan return JSON. Cukup redirect kembali.
-    // Inertia akan mendeteksi ini sebagai sukses dan memicu onSuccess di frontend.
-    return back();
-    // Jika ada error validasi, backend bisa return:
-    // return back()->withErrors(['field_name' => 'Pesan error']);
-
-})->name('order.store.popup');
 
 
 Route::get('/dashboard', function () {
@@ -97,4 +104,12 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
-require __DIR__.'/auth.php';
+//admin
+Route::get('/admin/login', [AdminLoginController::class, 'showAdminLogin'])->name('admin.login.view');
+Route::post('/admin/login', [AdminLoginController::class, 'adminLogin'])->name('admin.login');
+Route::middleware('auth');
+
+
+
+
+require __DIR__ . '/auth.php';

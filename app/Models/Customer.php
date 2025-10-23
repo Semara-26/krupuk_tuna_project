@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class Customer extends Model
 {
     //
+    protected $primaryKey = 'email';
     protected $fillable = [
         'full_name',
         'email',
@@ -15,21 +16,9 @@ class Customer extends Model
         'email',
         'province',
         'phone',
-        'regency',
+        'district',
         'city',
         'address',
         'marker'
     ];
-
-    protected $hidden = [
-        'password',
-        'remember_token',
-    ];
-
-    protected function casts()
-    {
-        return [
-            'password'=>'hashed'
-        ];
-    }
 }

@@ -11,10 +11,12 @@ class CourierController extends Controller
     public function getProvince()
     {
         $province_cache = Cache::get('province');
+
         if ($province_cache) {
+
             return response()->json([
                 'status' => 200,
-                'message' => 'success',
+                'message' => 'success from cache',
                 'data' => $province_cache
             ]);
         } else {
@@ -29,7 +31,7 @@ class CourierController extends Controller
                     ]
                 ]);
                 $province = json_decode($province_raw->getBody()->getContents());
-                Cache::put('province', $province, now()->addMinute(10));
+                Cache::put('province', $province);
                 return response()->json([
                     'status' => 200,
                     'message' => 'success',
@@ -37,7 +39,7 @@ class CourierController extends Controller
                 ]);
             } catch (\Throwable $th) {
                 return response()->json([
-                    'status' => 200,
+                    'status' => 400,
                     'message' => $th->getMessage(),
                     'data' => []
                 ]);
@@ -65,7 +67,7 @@ class CourierController extends Controller
             ]);
         } catch (\Throwable $th) {
             return response()->json([
-                'status' => 200,
+                'status' => 400,
                 'message' => $th->getMessage(),
                 'data' => []
             ]);
@@ -92,7 +94,7 @@ class CourierController extends Controller
             ]);
         } catch (\Throwable $th) {
             return response()->json([
-                'status' => 200,
+                'status' => 400,
                 'message' => $th->getMessage(),
                 'data' => []
             ]);
@@ -127,7 +129,7 @@ class CourierController extends Controller
             ]);
         } catch (\Throwable $th) {
             return response()->json([
-                'status' => 200,
+                'status' => 400,
                 'message' => $th->getMessage(),
                 'data' => []
             ]);

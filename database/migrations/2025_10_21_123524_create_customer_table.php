@@ -12,19 +12,17 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('customers', function (Blueprint $table) {
-            $table->id()->index();
+            $table->string('email')->unique()->index()->primary();
             $table->string('full_name');
             $table->unsignedBigInteger('user_id')->nullable();
             $table->foreign('user_id')->references('id')->on('users')->cascadeOnUpdate();
             $table->unsignedBigInteger('reseller_id')->nullable();
-            $table->foreign('reseller_id')->references('id')->on('resellers')->cascadeOnUpdate();
-            $table->string('email')->unique()->index();
+            // $table->foreign('reseller_id')->references('id')->on('resellers')->cascadeOnUpdate();
             $table->string('province');
             $table->string('phone');
-            $table->string('regency');
+            $table->string('district');
             $table->string('city');
             $table->text('address');
-            $table->string('marker');
             $table->timestamps();
         });
     }
