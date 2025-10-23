@@ -1,15 +1,14 @@
-import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Head } from '@inertiajs/react'; // DIHAPUS: Hapus 'router' yang sudah tidak dipakai
-import { useState } from 'react';
-import { Swiper, SwiperSlide } from 'swiper/react';
-import { Navigation, Autoplay, Pagination } from 'swiper/modules';
-import 'swiper/css';
-import 'swiper/css/navigation';
-import 'swiper/css/pagination';
-import OrderModal from '@/Components/OrderModal'; // 1. Impor komponen modal yang baru dibuat
+import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
+import { Head } from "@inertiajs/react"; // DIHAPUS: Hapus 'router' yang sudah tidak dipakai
+import { useState } from "react";
+import { Swiper, SwiperSlide } from "swiper/react";
+import { Navigation, Autoplay, Pagination } from "swiper/modules";
+import "swiper/css";
+import "swiper/css/navigation";
+import "swiper/css/pagination";
+import OrderModal from "@/Components/OrderModal"; // 1. Impor komponen modal yang baru dibuat
 
-export default function Welcome({ auth}) {
-
+export default function Welcome({ auth }) {
     const [quantity, setQuantity] = useState(1);
     // 2. Tambahkan state baru untuk mengontrol kapan modal muncul
     const [showOrderModal, setShowOrderModal] = useState(false);
@@ -33,9 +32,9 @@ export default function Welcome({ auth}) {
     };
 
     const bannerImages = [
-        '/images/ikan-home.avif',
-        '/images/banner2.jpg',
-        '/images/banner4.png',
+        "/images/ikan-home.avif",
+        "/images/banner2.jpg",
+        "/images/banner4.png",
     ];
 
     return (
@@ -44,21 +43,31 @@ export default function Welcome({ auth}) {
 
             {/* ... (bagian Swiper tidak berubah) ... */}
             <div className="relative">
-                 <Swiper
+                <Swiper
                     modules={[Navigation, Autoplay, Pagination]}
                     spaceBetween={0}
                     slidesPerView={1}
                     navigation
                     pagination={{ clickable: true }}
                     loop={true}
-                    autoplay={{ delay: 3000, disableOnInteraction: false, }}
+                    autoplay={{ delay: 3000, disableOnInteraction: false }}
                     className="w-full h-[32rem]"
                 >
                     {bannerImages.map((image, index) => (
-                        <SwiperSlide key={index} className="relative bg-black overflow-hidden">
-                            <div style={{ backgroundImage: `url(${image})` }} className="absolute inset-0 w-full h-full bg-cover bg-center filter blur-xl scale-110"></div>
+                        <SwiperSlide
+                            key={index}
+                            className="relative bg-black overflow-hidden"
+                        >
+                            <div
+                                style={{ backgroundImage: `url(${image})` }}
+                                className="absolute inset-0 w-full h-full bg-cover bg-center filter blur-xl scale-110"
+                            ></div>
                             <div className="absolute inset-0 bg-black opacity-40"></div>
-                            <img src={image} alt={`Banner ${index + 1}`} className="relative w-full h-full object-contain" />
+                            <img
+                                src={image}
+                                alt={`Banner ${index + 1}`}
+                                className="relative w-full h-full object-contain"
+                            />
                         </SwiperSlide>
                     ))}
                 </Swiper>
@@ -69,9 +78,14 @@ export default function Welcome({ auth}) {
                     Pesan Krupuk Tuna Sekarang!
                 </h2>
                 <div className="max-w-md mx-auto flex flex-col items-center space-y-4">
-                   {/* ... (bagian quantity selector tidak berubah) ... */}
-                   <div className="flex items-center justify-center space-x-4">
-                        <button onClick={decrementQuantity} className="w-10 h-10 bg-gray-200 text-gray-800 font-bold rounded-full text-lg hover:bg-gray-300 transition">-</button>
+                    {/* ... (bagian quantity selector tidak berubah) ... */}
+                    <div className="flex items-center justify-center space-x-4">
+                        <button
+                            onClick={decrementQuantity}
+                            className="w-10 h-10 bg-gray-200 text-gray-800 font-bold rounded-full text-lg hover:bg-gray-300 transition"
+                        >
+                            -
+                        </button>
                         <input
                             type="text"
                             inputMode="numeric"
@@ -80,7 +94,12 @@ export default function Welcome({ auth}) {
                             onChange={handleQuantityChange}
                             className="text-2xl font-bold w-24 text-center border-gray-300 rounded-lg focus:ring-red-500 focus:border-red-500"
                         />
-                        <button onClick={incrementQuantity} className="w-10 h-10 bg-gray-200 text-gray-800 font-bold rounded-full text-lg hover:bg-gray-300 transition">+</button>
+                        <button
+                            onClick={incrementQuantity}
+                            className="w-10 h-10 bg-gray-200 text-gray-800 font-bold rounded-full text-lg hover:bg-gray-300 transition"
+                        >
+                            +
+                        </button>
                     </div>
 
                     <button
@@ -98,7 +117,6 @@ export default function Welcome({ auth}) {
                 show={showOrderModal}
                 onClose={closeModal}
                 quantity={quantity}
-                auth={auth}
             />
         </AuthenticatedLayout>
     );
