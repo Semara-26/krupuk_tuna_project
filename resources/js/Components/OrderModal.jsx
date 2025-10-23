@@ -93,7 +93,7 @@ export default function OrderModal({ show, onClose, quantity }) {
                 const res = await axios.get(route("province.get"));
                 console.log("Province response:", res);
 
-                // setProvinces(res.data.data.data);
+                setProvinces(res.data.data.data);
             } catch (err) {
                 console.error("Failed to load provinces:", err);
             }
