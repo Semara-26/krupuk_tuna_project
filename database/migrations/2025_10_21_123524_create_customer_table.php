@@ -13,16 +13,10 @@ return new class extends Migration
     {
         Schema::create('customers', function (Blueprint $table) {
             $table->string('email')->unique()->index()->primary();
-            $table->string('full_name');
-            $table->unsignedBigInteger('user_id')->nullable();
-            $table->foreign('user_id')->references('id')->on('users')->cascadeOnUpdate();
-            $table->unsignedBigInteger('reseller_id')->nullable();
+            // $table->unsignedBigInteger('user_id')->nullable();
+            // $table->foreign('user_id')->references('id')->on('users')->cascadeOnUpdate();
+            // $table->unsignedBigInteger('reseller_id')->nullable();
             // $table->foreign('reseller_id')->references('id')->on('resellers')->cascadeOnUpdate();
-            $table->string('province');
-            $table->string('phone');
-            $table->string('district');
-            $table->string('city');
-            $table->text('address');
             $table->timestamps();
         });
     }

@@ -11,20 +11,25 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('checkout_history', function (Blueprint $table) {
+        Schema::create('checkout_histories', function (Blueprint $table) {
             $table->id();
             $table->string('customer_id');
             $table->foreign('customer_id')->references('email')->on('customers');
-            $table->integer('qty');
+            $table->string('full_name');
+            $table->integer('quantity');
+            $table->string('province');
+            $table->string('phone');
+            $table->string('district');
+            $table->string('city');
+            $table->text('address');
             $table->enum('payment_status', ['pending', 'completed', 'cancelled'])->default('pending');
-            $table->string('tracking_status')->nullable();
-            $table->string('district_id');
+            $table->enum('tracking_status', ['dikemas', 'dikirim', 'diterima'])->nullable();
             $table->string('courier_code');
             $table->string('courier_service');
             $table->integer('courier_price');
             $table->integer('grand_total');
             $table->string('order_no')->index();
-            $table->string('awb')->index();
+            $table->string('awb')->index()->nullable();
             $table->timestamps();
         });
     }

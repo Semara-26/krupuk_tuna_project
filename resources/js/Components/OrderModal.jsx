@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import Modal from "@/Components/Modal"; // Kita pakai komponen Modal bawaan Breeze
+import Modal from "@/Components/Modal";
 import PrimaryButton from "@/Components/PrimaryButton";
 import TextInput from "@/Components/TextInput";
 import InputLabel from "@/Components/InputLabel";
@@ -7,32 +7,23 @@ import InputError from "@/Components/InputError";
 import { useForm } from "@inertiajs/react";
 import axios from "axios";
 
-// Terima props: 'show' (apakah modal tampil), 'onClose' (fungsi menutup modal), 'quantity' (jumlah pesanan)
 export default function OrderModal({ show, onClose, quantity }) {
-    //buat provinsinya
+    // State untuk data provinsi, kota, kecamatan, dan kurir
     const [provinces, setProvinces] = useState([]);
-    // State untuk data kota & kecamatan (akan diisi nanti)
     const [cities, setCities] = useState([]);
     const [districts, setDistricts] = useState([]);
-    // State untuk pilihan kurir (akan diisi nanti)
     const [couriers, setCouriers] = useState([]);
-
-    const [selectedOngkir, setSelectedOngkir] = useState(0); // <-- 1. TAMBAH STATE BARU
-
-    // State untuk mengontrol tampilan modal: 'form' atau 'paymentInfo'
+    
+    const [selectedOngkir, setSelectedOngkir] = useState(0);
     const [step, setStep] = useState("form");
 
-    // --- Kalkulasi Harga & Kupon (Dummy) ---
-    // Harga per item (nanti bisa diambil dari backend)
+    // Kalkulasi Harga & Kupon
     const hargaPerPaket = 50000;
     const totalHargaProduk = hargaPerPaket * quantity;
-    // Ongkir dummy (ini HARUS dikalkulasi backend nantinya berdasarkan kurir & alamat)
-    // const ongkir = 25000; // Contoh ongkir
     const totalTermasukOngkir = totalHargaProduk + selectedOngkir;
-    // Kupon dummy (misal 1 kupon per 2 paket)
     const kuponUndian = Math.floor(quantity / 2);
 
-    // Siapkan form dengan useForm
+    // Form dengan useForm Inertia
     const {
         data,
         setData,
@@ -42,46 +33,55 @@ export default function OrderModal({ show, onClose, quantity }) {
         reset,
         recentlySuccessful,
     } = useForm({
-        nama_lengkap: "",
-        no_hp: "",
+        full_name: "",
+        phone: "",
         email: "",
-        provinsi: "",
-        kabupaten: "",
-        kota: "",
-        alamat_lengkap: "",
-        kurir: "", // Field baru sesuai PDF
+        province_id: "",
+        province: "",
+        district_id: "",
+        district: "",
+        city_id: "",
+        city: "",
+        address: "",
         quantity: quantity,
-        total_harga: totalTermasukOngkir, // Kirim total akhir ke backend
+        total_harga: 0,
+        kurir: "",
+        courier_code: "",
+        courier_service: "",
     });
 
-    // Update quantity di form jika prop quantity berubah (misal user ganti di halaman utama)
-    // TAMBAHKAN INI: Update total_harga di form saat ongkir berubah
+    // Update quantity di form jika prop quantity berubah
+    useEffect(() => {
+        setData("quantity", quantity);
+    }, [quantity]);
+
+    // Update total_harga di form saat ongkir berubah
     useEffect(() => {
         setData("total_harga", totalTermasukOngkir);
-    }, [totalTermasukOngkir]); // <-- Trigger-nya adalah state kalkulasi
+    }, [totalTermasukOngkir]);
 
     // Fungsi saat form disubmit
     const handleFormSubmit = (e) => {
         e.preventDefault();
-        // Kirim data ke route 'order.store.popup' yang sudah kita buat
         post(route("order.store.popup"), {
-            preserveScroll: true, // Agar halaman tidak scroll ke atas
+            preserveScroll: true,
             onSuccess: () => {
-                // Jika request ke backend sukses, pindah ke tampilan info pembayaran
                 setStep("paymentInfo");
             },
-            // onError: (errors) => { /* useForm otomatis menampilkan errors */ }
         });
     };
 
     // Fungsi untuk menutup modal dan mereset state
     const handleClose = () => {
-        onClose(); // Panggil fungsi onClose dari props
-        // Setelah jeda singkat (animasi modal selesai), reset form & step
+        onClose();
         setTimeout(() => {
             reset();
             setStep("form");
-        }, 300); // Sesuaikan durasi jika perlu
+            setCities([]);
+            setDistricts([]);
+            setCouriers([]);
+            setSelectedOngkir(0);
+        }, 300);
     };
 
     // Fungsi format Rupiah
@@ -93,15 +93,12 @@ export default function OrderModal({ show, onClose, quantity }) {
         }).format(number);
     };
 
-    //bang ini aku pake axios, jadi pas webnya pertama dijalanin dia bakal ngefetch data provinsi dulu,
-    //harusnya ngefetch data yang lain ngga pake useeffect ntah sih frontend membuatku gila
+    // Fetch provinces saat component mount
     useEffect(() => {
         const fetchProvinces = async () => {
             try {
-                //di data res ni ada data lain juga, bagus buat nampilin error
                 const res = await axios.get(route("province.get"));
                 console.log("Province response:", res);
-
                 setProvinces(res.data.data.data);
             } catch (err) {
                 console.error("Failed to load provinces:", err);
@@ -111,24 +108,32 @@ export default function OrderModal({ show, onClose, quantity }) {
         fetchProvinces();
     }, []);
 
-    //Ini ketrigger waktu user dah milih provinsinya
-    //nah ini untuk abang buat lanjutin, mataku dah perih bejir. routenya ada di Route.php
-
+    // Handle province change - simpan ID dan nama
     const handleProvinceChange = async (e) => {
-        // console.log(e.target.value)
         const provinceId = e.target.value;
-        setData("provinsi", provinceId);
+        
+        // Simpan ID ke province_id
+        setData("province_id", provinceId);
+        
+        // Cari dan simpan NAMA ke province
+        const selectedProvince = provinces.find(p => p.id == provinceId);
+        setData("province", selectedProvince ? selectedProvince.name : "");
+        
+        // Reset semua field di bawahnya
         setCities([]);
         setDistricts([]);
         setCouriers([]);
-        setData("kabupaten", "");
-        setData("kota", "");
+        setData("district_id", "");
+        setData("district", "");
+        setData("city_id", "");
+        setData("city", "");
         setData("kurir", "");
+        setData("courier_code", "");
+        setData("courier_service", "");
         setSelectedOngkir(0);
 
-        // Jika provinsi dipilih (bukan option "Pilih Provinsi")
+        // Jika province dipilih, fetch cities
         if (provinceId) {
-            // Lanjutkan untuk fetch data kota berdasarkan provinceId
             try {
                 const res = await axios.get(
                     route("city.get", { province_id: provinceId })
@@ -151,13 +156,21 @@ export default function OrderModal({ show, onClose, quantity }) {
         }
     };
 
-    // Fungsi yang ter-trigger saat KABUPATEN/KOTA dipilih
+    // Handle city change - simpan ID dan nama
     const handleCityChange = async (e) => {
         const cityId = e.target.value;
         console.log("Selected City ID:", cityId);
-        setData("kabupaten", cityId); // Simpan ID KOTA ke state 'kabupaten'
+        
+        // Simpan ID ke district_id
+        setData("district_id", cityId);
+        
+        // Cari dan simpan NAMA ke district
+        const selectedCity = cities.find(c => c.id == cityId);
+        setData("district", selectedCity ? selectedCity.name : "");
+        
         // Reset kecamatan & kurir
-        setData("kota", "");
+        setData("city_id", "");
+        setData("city", "");
         setDistricts([]);
         setCouriers([]);
         setData("kurir", "");
@@ -186,11 +199,19 @@ export default function OrderModal({ show, onClose, quantity }) {
             }
         }
     };
-    // Fungsi yang ter-trigger saat KECAMATAN dipilih
+
+    // Handle district change - simpan ID dan nama
     const handleDistrictChange = async (e) => {
         const districtId = e.target.value;
         console.log("Selected District ID:", districtId);
-        setData("kota", districtId); // Simpan ID KECAMATAN ke state 'kota'
+        
+        // Simpan ID ke city_id
+        setData("city_id", districtId);
+        
+        // Cari dan simpan NAMA ke city
+        const selectedDistrict = districts.find(d => d.id == districtId);
+        setData("city", selectedDistrict ? selectedDistrict.name : "");
+        
         // Reset kurir
         setData("kurir", "");
         setSelectedOngkir(0);
@@ -199,19 +220,16 @@ export default function OrderModal({ show, onClose, quantity }) {
         if (districtId) {
             // Fetch data kurir/ongkir berdasarkan districtId
             try {
-                // Ganti route() dengan URL endpoint kurir jika namanya beda
                 const res = await axios.get(
                     route("cost.get", { district_id: districtId })
                 );
                 console.log("Courier/Cost response:", res.data);
-                // Sesuaikan bagian ini berdasarkan struktur response API kurir/ongkir
-                // Contoh: Jika response adalah array of objects kurir
                 if (
                     res.data &&
                     res.data.data &&
-                    Array.isArray(res.data.data.data) // <-- UBAH DI SINI
+                    Array.isArray(res.data.data.data)
                 ) {
-                    setCouriers(res.data.data.data); // <-- UBAH DI SINI
+                    setCouriers(res.data.data.data);
                 } else {
                     console.error("Unexpected courier data format:", res.data);
                     setCouriers([]);
@@ -224,35 +242,34 @@ export default function OrderModal({ show, onClose, quantity }) {
     };
 
     const handleCourierChange = (e) => {
-        // 1. Ini isinya 'uniqueKey' (misal: "jne-REG")
         const uniqueValue = e.target.value;
-
-        // 2. Simpan uniqueValue ke form (atau 'code'-nya saja, terserah backend)
-        //    Untuk amannya, kita simpan 'uniqueValue'
         setData("kurir", uniqueValue);
 
         if (!uniqueValue) {
             setSelectedOngkir(0);
+            setData("courier_code", "");
+            setData("courier_service", "");
             return;
         }
 
-        // 3. Ubah logika .find()
         const selected = couriers.find(
             (c) => `${c.code}-${c.service}` == uniqueValue
         );
 
-        // 4. Kode di bawah ini sekarang aman dan tidak perlu diubah
         if (selected && typeof selected.cost === "number") {
             setSelectedOngkir(selected.cost);
+            setData("courier_code", selected.code);
+            setData("courier_service", selected.service);
         } else {
             console.error("Courier cost not found or invalid:", selected);
             setSelectedOngkir(0);
+            setData("courier_code", "");
+            setData("courier_service", "");
         }
     };
 
     return (
         <Modal show={show} onClose={handleClose} maxWidth="md">
-            {/* Tampilkan konten berdasarkan nilai state 'step' */}
             {step === "form" ? (
                 // --- Tampilan 1: Form Order ---
                 <form
@@ -285,15 +302,15 @@ export default function OrderModal({ show, onClose, quantity }) {
                     {/* Input Fields */}
                     <div className="space-y-3">
                         <div>
-                            <InputLabel htmlFor="provinsi" value="Provinsi" />
+                            <InputLabel htmlFor="province" value="Province" />
                             <select
-                                id="provinsi"
-                                value={data.provinsi}
+                                id="province"
+                                value={data.province_id}
                                 onChange={handleProvinceChange}
                                 className="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm"
                                 required
                             >
-                                <option value="">Pilih Provinsi</option>
+                                <option value="">Pilih Province</option>
                                 {provinces.map((prov) => (
                                     <option key={prov.id} value={prov.id}>
                                         {prov.name}
@@ -301,36 +318,31 @@ export default function OrderModal({ show, onClose, quantity }) {
                                 ))}
                             </select>
                             <InputError
-                                message={errors.provinsi}
+                                message={errors.province_id}
                                 className="mt-2"
                             />
                         </div>
 
                         <div>
                             <InputLabel
-                                htmlFor="kabupaten"
-                                value="Kabupaten/Kota"
+                                htmlFor="district"
+                                value="District/City"
                             />
                             <select
-                                id="kabupaten"
-                                value={data.kabupaten}
-                                // DIUBAH: Panggil handleCityChange, bukan cuma setData
+                                id="district"
+                                value={data.district_id}
                                 onChange={handleCityChange}
                                 className="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm"
                                 required
-                                // TAMBAHAN: Disable jika provinsi belum dipilih
                                 disabled={cities.length === 0}
                             >
                                 <option value="">
-                                    {/* Logika untuk teks placeholder */}
                                     {provinces.length === 0
                                         ? "Loading..."
                                         : cities.length === 0
-                                        ? "Pilih Provinsi Dulu"
-                                        : "Pilih Kabupaten/Kota"}
+                                        ? "Pilih Province Dulu"
+                                        : "Pilih District/City"}
                                 </option>
-
-                                {/* DIUBAH: Hapus opsi hardcode, ganti dengan map dari state 'cities' */}
                                 {cities.map((city) => (
                                     <option key={city.id} value={city.id}>
                                         {city.name}
@@ -338,30 +350,26 @@ export default function OrderModal({ show, onClose, quantity }) {
                                 ))}
                             </select>
                             <InputError
-                                message={errors.kabupaten}
+                                message={errors.district_id}
                                 className="mt-2"
                             />
                         </div>
 
                         <div>
-                            <InputLabel htmlFor="kota" value="Kota/Kecamatan" />
+                            <InputLabel htmlFor="city" value="Kecamatan" />
                             <select
-                                id="kota"
-                                value={data.kota}
-                                // DIUBAH: Panggil handleDistrictChange, bukan cuma setData
+                                id="city"
+                                value={data.city_id}
                                 onChange={handleDistrictChange}
                                 className="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm"
                                 required
-                                // TAMBAHAN: Disable jika kabupaten belum dipilih
                                 disabled={districts.length === 0}
                             >
                                 <option value="">
                                     {districts.length === 0
-                                        ? "Pilih Kabupaten Dulu"
-                                        : "Pilih Kota/Kecamatan"}
+                                        ? "Pilih District Dulu"
+                                        : "Pilih Kecamatan"}
                                 </option>
-
-                                {/* DIUBAH: Hapus opsi hardcode, ganti dengan map dari state 'districts' */}
                                 {districts.map((district) => (
                                     <option
                                         key={district.id}
@@ -372,34 +380,33 @@ export default function OrderModal({ show, onClose, quantity }) {
                                 ))}
                             </select>
                             <InputError
-                                message={errors.kota}
+                                message={errors.city_id}
                                 className="mt-2"
                             />
                         </div>
 
                         <div>
                             <InputLabel
-                                htmlFor="alamat_lengkap"
+                                htmlFor="address"
                                 value="Alamat Lengkap"
                             />
                             <TextInput
-                                id="alamat_lengkap"
-                                value={data.alamat_lengkap}
+                                id="address"
+                                value={data.address}
                                 onChange={(e) =>
-                                    setData("alamat_lengkap", e.target.value)
+                                    setData("address", e.target.value)
                                 }
                                 className="mt-1 block w-full"
                                 required
                             />
                             <InputError
-                                message={errors.alamat_lengkap}
+                                message={errors.address}
                                 className="mt-2"
                             />
                         </div>
 
                         <div>
                             <InputLabel htmlFor="kurir" value="Pilih Kurir" />
-                            {/* DIUBAH: Ganti TextInput menjadi <select> */}
                             <select
                                 id="kurir"
                                 value={data.kurir}
@@ -414,15 +421,12 @@ export default function OrderModal({ show, onClose, quantity }) {
                                         : "Pilih Kurir"}
                                 </option>
                                 {couriers.map((courier) => {
-                                    // 1. Buat ID unik, contoh: "jne-REG"
                                     const uniqueKey = `${courier.code}-${courier.service}`;
-
                                     return (
                                         <option
                                             key={uniqueKey}
                                             value={uniqueKey}
                                         >
-                                            {/* Tampilkan nama dan service-nya */}
                                             {courier.name} ({courier.service}) -{" "}
                                             {formatRupiah(courier.cost)}
                                         </option>
@@ -436,43 +440,46 @@ export default function OrderModal({ show, onClose, quantity }) {
                         </div>
 
                         <hr className="my-4" />
+                        
                         <div>
                             <InputLabel
-                                htmlFor="nama_lengkap"
+                                htmlFor="full_name"
                                 value="Nama Sesuai KTP"
                             />
                             <TextInput
-                                id="nama_lengkap"
-                                value={data.nama_lengkap}
+                                id="full_name"
+                                value={data.full_name}
                                 onChange={(e) =>
-                                    setData("nama_lengkap", e.target.value)
+                                    setData("full_name", e.target.value)
                                 }
                                 className="mt-1 block w-full"
                                 required
                             />
                             <InputError
-                                message={errors.nama_lengkap}
+                                message={errors.full_name}
                                 className="mt-2"
                             />
                         </div>
+                        
                         <div>
-                            <InputLabel htmlFor="no_hp" value="No Whatsapp" />
+                            <InputLabel htmlFor="phone" value="No Whatsapp" />
                             <TextInput
-                                id="no_hp"
+                                id="phone"
                                 type="tel"
-                                value={data.no_hp}
+                                value={data.phone}
                                 onChange={(e) =>
-                                    setData("no_hp", e.target.value)
+                                    setData("phone", e.target.value)
                                 }
                                 className="mt-1 block w-full"
                                 required
                                 placeholder="Contoh: 08123456789"
                             />
                             <InputError
-                                message={errors.no_hp}
+                                message={errors.phone}
                                 className="mt-2"
                             />
                         </div>
+                        
                         <div>
                             <InputLabel
                                 htmlFor="email"
@@ -518,7 +525,6 @@ export default function OrderModal({ show, onClose, quantity }) {
                     </div>
                 </form>
             ) : (
-                // Jika step bukan 'form', tampilkan info pembayaran
                 // --- Tampilan 2: Info Pembayaran ---
                 <div className="p-6 text-center">
                     <h2 className="text-lg font-medium text-gray-900 mb-4 border-b pb-2">
@@ -527,7 +533,6 @@ export default function OrderModal({ show, onClose, quantity }) {
                     <p className="mb-2">
                         Silahkan Melakukan pembayaran Sejumlah:
                     </p>
-                    {/* Tampilkan total dari kalkulasi sebelumnya */}
                     <p className="text-3xl font-bold text-red-600 mb-4">
                         {formatRupiah(totalTermasukOngkir)}
                     </p>
@@ -547,7 +552,6 @@ export default function OrderModal({ show, onClose, quantity }) {
                     </p>
 
                     <div className="mt-6 flex justify-center">
-                        {/* Tombol untuk menutup modal */}
                         <button
                             type="button"
                             onClick={handleClose}

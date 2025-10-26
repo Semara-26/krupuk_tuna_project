@@ -23,23 +23,23 @@ Route::controller(CourierController::class)->group(function () {
     //route buat ngambil data kabupaten dari city_id
     Route::get('get-district-data/{city_id}', 'getDistrict')->name('district.get');
     //nah, ini ngambil list total jasa kurir ama mang kurirnya
-    Route::get('get-courier/{district_id}', 'getCalculatedCost')->name('cost.get');
+    Route::get('get-courier/{district_id}', 'getCourier')->name('cost.get');
 });
 
-// Route::post('/customer/checkout', [CheckoutController::class, 'create'])->name('order.store.popup');
+Route::post('/customer/checkout', [CheckoutController::class, 'create'])->name('order.store.popup');
 
 // --- DITAMBAHKAN: Route baru untuk memproses form dari popup ---
-Route::post('/order-popup', function (Request $request) {
-    // Nanti tim backend akan menyimpan data ini ke database
-    Log::info('Order data received via popup:', $request->all()); // Contoh logging
+// Route::post('/order-popup', function (Request $request) {
+//     // Nanti tim backend akan menyimpan data ini ke database
+//     Log::info('Order data received via popup:', $request->all()); // Contoh logging
 
-    // DIUBAH: Jangan return JSON. Cukup redirect kembali.
-    // Inertia akan mendeteksi ini sebagai sukses dan memicu onSuccess di frontend.
-    return back();
-    // Jika ada error validasi, backend bisa return:
-    // return back()->withErrors(['field_name' => 'Pesan error']);
+//     // DIUBAH: Jangan return JSON. Cukup redirect kembali.
+//     // Inertia akan mendeteksi ini sebagai sukses dan memicu onSuccess di frontend.
+//     return back();
+//     // Jika ada error validasi, backend bisa return:
+//     // return back()->withErrors(['field_name' => 'Pesan error']);
 
-})->name('order.store.popup');
+// })->name('order.store.popup');
 
 
 

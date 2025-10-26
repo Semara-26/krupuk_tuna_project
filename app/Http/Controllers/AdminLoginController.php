@@ -9,25 +9,28 @@ use Inertia\Inertia;
 class AdminLoginController extends Controller
 {
     //
-    public function showAdminLogin(){
+    public function showAdminLogin()
+    {
         return Inertia::render('auth.adminlogin');
     }
 
-    public function adminLogin(Request $request){
+    public function adminLogin(Request $request)
+    {
         $validateData = $request->validate([
             'username' => 'required|min:3',
             'password' => 'required|min:8'
         ]);
 
         $success = Auth::attempt($validateData);
-        if(!$success){
-            return response()->json([
-                'status'  => 400,
-                'message' => 'user tidak ditemukan'
-            ]
-                
+        if (!$success) {
+            return response()->json(
+                [
+                    'status'  => 400,
+                    'message' => 'user tidak ditemukan'
+                ]
+
             );
-        } 
+        }
 
         $request->session()->regenerate();
         return Inertia::render('admin.admindashboard');

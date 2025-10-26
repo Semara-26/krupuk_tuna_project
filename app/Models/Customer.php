@@ -8,17 +8,9 @@ class Customer extends Model
 {
     //
     protected $primaryKey = 'email';
+    public $incrementing = false;      // It's NOT an integer auto-increment
+    protected $keyType = 'string';     // The key type is string
     protected $fillable = [
-        'full_name',
         'email',
-        'user_id',
-        'reseller_id',
-        'email',
-        'province',
-        'phone',
-        'district',
-        'city',
-        'address',
-        'marker'
     ];
 }

@@ -11,9 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('coupon', function (Blueprint $table) {
-            $table->string('code')->primary()->unique()->index();
-            $table->string('status');
+        Schema::create('coupons', function (Blueprint $table) {
+            $table->string('id')->primary()->unique()->index();
+            $table->enum('status', [0, 1, 2])->default(0);
             $table->timestamps();
         });
     }
