@@ -21,14 +21,14 @@ Route::controller(CourierController::class)->group(function () {
     //route buat ngambil data kota dari provinsi_id
     Route::get('/get-city-data/{province_id}', 'getCity')->name('city.get');
     //route buat ngambil data kabupaten dari city_id
-    Route::get('get-district-data/{city_id}', 'getDistrict')->name('district.get');
+    Route::get('/get-district-data/{city_id}', 'getDistrict')->name('district.get');
     //nah, ini ngambil list total jasa kurir ama mang kurirnya
-    Route::get('get-courier/{district_id}', 'getCourier')->name('cost.get');
+    Route::get('/get-courier/{district_id}', 'getCourier')->name('cost.get');
 });
 
 Route::post('/customer/checkout', [CheckoutController::class, 'create'])->name('order.store.popup');
 
-// --- DITAMBAHKAN: Route baru untuk memproses form dari popup ---
+// // --- DITAMBAHKAN: Route baru untuk memproses form dari popup ---
 // Route::post('/order-popup', function (Request $request) {
 //     // Nanti tim backend akan menyimpan data ini ke database
 //     Log::info('Order data received via popup:', $request->all()); // Contoh logging

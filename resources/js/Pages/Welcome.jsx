@@ -29,6 +29,7 @@ export default function Welcome({ auth }) {
     // 4. Tambahkan fungsi untuk menutup modal
     const closeModal = () => {
         setShowOrderModal(false);
+        setQuantity(1);
     };
 
     const bannerImages = [

@@ -138,7 +138,7 @@ export default function Lacak() {
                                         name="order_id"
                                         value={data.nomor_pesanan} // Nilai input diambil dari state 'data'
                                         className="mt-1 block w-full"
-                                        placeholder="Contoh: KT-12345678"
+                                        placeholder="Contoh: ORD-20251027-000015"
                                         isFocused={true}
                                         onChange={(e) =>
                                             setData(

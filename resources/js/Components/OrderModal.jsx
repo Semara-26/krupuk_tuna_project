@@ -13,7 +13,7 @@ export default function OrderModal({ show, onClose, quantity }) {
     const [cities, setCities] = useState([]);
     const [districts, setDistricts] = useState([]);
     const [couriers, setCouriers] = useState([]);
-    
+
     const [selectedOngkir, setSelectedOngkir] = useState(0);
     const [step, setStep] = useState("form");
 
@@ -61,14 +61,32 @@ export default function OrderModal({ show, onClose, quantity }) {
     }, [totalTermasukOngkir]);
 
     // Fungsi saat form disubmit
-    const handleFormSubmit = (e) => {
+    const handleFormSubmit = async (e) => {
         e.preventDefault();
-        post(route("order.store.popup"), {
-            preserveScroll: true,
-            onSuccess: () => {
-                setStep("paymentInfo");
-            },
-        });
+
+        // Kita pakai axios karena backend return JSON
+        try {
+            // GANTI 'form' JADI 'data'
+            const res = await axios.post(route("order.store.popup"), data);
+
+            // res.data sekarang berisi: { status: 200, message: 'success', data: { grand_total: ... } }
+            console.log("Respon dari Backend:", res.data);
+
+            // Opsional: Kamu bisa ambil grand_total dari sini jika perlu
+            // const backendTotal = res.data.data.grand_total;
+
+            setStep("paymentInfo"); // Pindah ke tampilan pembayaran
+            reset();
+        } catch (err) {
+            // Ini akan nangkep error validasi dari backend (yang status 400)
+            if (err.response && err.response.status === 400) {
+                console.error("Error Validasi:", err.response.data.data[0]);
+                // Di sini kamu bisa nampilin error validasinya ke user
+                // Misalnya: alert(err.response.data.data[0].full_name[0]);
+            } else {
+                console.error("Error Submit Form:", err);
+            }
+        }
     };
 
     // Fungsi untuk menutup modal dan mereset state
@@ -111,14 +129,14 @@ export default function OrderModal({ show, onClose, quantity }) {
     // Handle province change - simpan ID dan nama
     const handleProvinceChange = async (e) => {
         const provinceId = e.target.value;
-        
+
         // Simpan ID ke province_id
         setData("province_id", provinceId);
-        
+
         // Cari dan simpan NAMA ke province
-        const selectedProvince = provinces.find(p => p.id == provinceId);
+        const selectedProvince = provinces.find((p) => p.id == provinceId);
         setData("province", selectedProvince ? selectedProvince.name : "");
-        
+
         // Reset semua field di bawahnya
         setCities([]);
         setDistricts([]);
@@ -131,6 +149,11 @@ export default function OrderModal({ show, onClose, quantity }) {
         setData("courier_code", "");
         setData("courier_service", "");
         setSelectedOngkir(0);
+
+        console.log(
+            "FRONTEND: Meminta data kota untuk Province ID:",
+            provinceId
+        );
 
         // Jika province dipilih, fetch cities
         if (provinceId) {
@@ -160,14 +183,14 @@ export default function OrderModal({ show, onClose, quantity }) {
     const handleCityChange = async (e) => {
         const cityId = e.target.value;
         console.log("Selected City ID:", cityId);
-        
+
         // Simpan ID ke district_id
         setData("district_id", cityId);
-        
+
         // Cari dan simpan NAMA ke district
-        const selectedCity = cities.find(c => c.id == cityId);
+        const selectedCity = cities.find((c) => c.id == cityId);
         setData("district", selectedCity ? selectedCity.name : "");
-        
+
         // Reset kecamatan & kurir
         setData("city_id", "");
         setData("city", "");
@@ -204,14 +227,14 @@ export default function OrderModal({ show, onClose, quantity }) {
     const handleDistrictChange = async (e) => {
         const districtId = e.target.value;
         console.log("Selected District ID:", districtId);
-        
+
         // Simpan ID ke city_id
         setData("city_id", districtId);
-        
+
         // Cari dan simpan NAMA ke city
-        const selectedDistrict = districts.find(d => d.id == districtId);
+        const selectedDistrict = districts.find((d) => d.id == districtId);
         setData("city", selectedDistrict ? selectedDistrict.name : "");
-        
+
         // Reset kurir
         setData("kurir", "");
         setSelectedOngkir(0);
@@ -330,6 +353,7 @@ export default function OrderModal({ show, onClose, quantity }) {
                             />
                             <select
                                 id="district"
+                                key={data.province_id}
                                 value={data.district_id}
                                 onChange={handleCityChange}
                                 className="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm"
@@ -359,6 +383,7 @@ export default function OrderModal({ show, onClose, quantity }) {
                             <InputLabel htmlFor="city" value="Kecamatan" />
                             <select
                                 id="city"
+                                key={data.district_id}
                                 value={data.city_id}
                                 onChange={handleDistrictChange}
                                 className="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm"
@@ -440,7 +465,7 @@ export default function OrderModal({ show, onClose, quantity }) {
                         </div>
 
                         <hr className="my-4" />
-                        
+
                         <div>
                             <InputLabel
                                 htmlFor="full_name"
@@ -460,7 +485,7 @@ export default function OrderModal({ show, onClose, quantity }) {
                                 className="mt-2"
                             />
                         </div>
-                        
+
                         <div>
                             <InputLabel htmlFor="phone" value="No Whatsapp" />
                             <TextInput
@@ -479,7 +504,7 @@ export default function OrderModal({ show, onClose, quantity }) {
                                 className="mt-2"
                             />
                         </div>
-                        
+
                         <div>
                             <InputLabel
                                 htmlFor="email"
