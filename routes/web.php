@@ -2,14 +2,11 @@
 
 use App\Http\Controllers\AdminLoginController;
 use App\Http\Controllers\CheckoutController;
-use App\Http\Controllers\Controller;
+use App\Http\Controllers\CouponController;
 use App\Http\Controllers\CourierController;
 use App\Http\Controllers\LandingPageController;
 use App\Http\Controllers\ProfileController;
-use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
-use Illuminate\Http\Request; // Kita mungkin butuh ini nanti
-use Illuminate\Support\Facades\Log; // Untuk logging sementara
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Auth;
 
@@ -27,20 +24,6 @@ Route::controller(CourierController::class)->group(function () {
 });
 
 Route::post('/customer/checkout', [CheckoutController::class, 'create'])->name('order.store.popup');
-
-// --- DITAMBAHKAN: Route baru untuk memproses form dari popup ---
-// Route::post('/order-popup', function (Request $request) {
-//     // Nanti tim backend akan menyimpan data ini ke database
-//     Log::info('Order data received via popup:', $request->all()); // Contoh logging
-
-//     // DIUBAH: Jangan return JSON. Cukup redirect kembali.
-//     // Inertia akan mendeteksi ini sebagai sukses dan memicu onSuccess di frontend.
-//     return back();
-//     // Jika ada error validasi, backend bisa return:
-//     // return back()->withErrors(['field_name' => 'Pesan error']);
-
-// })->name('order.store.popup');
-
 
 
 
@@ -94,20 +77,15 @@ Route::get('/lacak', function () {
 
 
 
-Route::get('/dashboard', function () {
-    return Inertia::render('Dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
-
-Route::middleware('auth')->group(function () {
-    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
-});
 
 //admin
 Route::get('/admin/login', [AdminLoginController::class, 'showAdminLogin'])->name('admin.login.view');
 Route::post('/admin/login', [AdminLoginController::class, 'adminLogin'])->name('admin.login');
 Route::middleware('auth');
+Route::get('/admin/generate-coupons/{num}', [CouponController::class, 'couponsGetter']);
+Route::get('/dashboard', function () {
+    return Inertia::render('Dashboard');
+})->middleware(['auth'])->name('dashboard');
 
 
 
