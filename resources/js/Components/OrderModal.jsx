@@ -297,7 +297,7 @@ export default function OrderModal({ show, onClose, quantity }) {
                 // --- Tampilan 1: Form Order ---
                 <form
                     onSubmit={handleFormSubmit}
-                    className="p-6 max-h-[80vh] overflow-y-auto"
+                    className="p-6 max-h-[80vh] overflow-y-scroll"
                 >
                     <h2 className="text-lg font-medium text-gray-900 mb-4 text-center border-b pb-2">
                         Form Order
@@ -323,7 +323,7 @@ export default function OrderModal({ show, onClose, quantity }) {
                     </div>
 
                     {/* Input Fields */}
-                    <div className="space-y-3">
+                    <div className="space-y-3 pr-2">
                         <div>
                             <InputLabel htmlFor="province" value="Province" />
                             <select

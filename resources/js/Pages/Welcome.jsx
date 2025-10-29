@@ -1,17 +1,19 @@
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
-import { Head } from "@inertiajs/react"; // DIHAPUS: Hapus 'router' yang sudah tidak dipakai
+import { Head } from "@inertiajs/react";
 import { useState } from "react";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Navigation, Autoplay, Pagination } from "swiper/modules";
 import "swiper/css";
 import "swiper/css/navigation";
 import "swiper/css/pagination";
-import OrderModal from "@/Components/OrderModal"; // 1. Impor komponen modal yang baru dibuat
+import OrderModal from "@/Components/OrderModal";
+import KuponModal from "@/Components/KuponModal";
 
 export default function Welcome({ auth }) {
     const [quantity, setQuantity] = useState(1);
     // 2. Tambahkan state baru untuk mengontrol kapan modal muncul
     const [showOrderModal, setShowOrderModal] = useState(false);
+    const [showKuponModal, setShowKuponModal] = useState(false);
 
     // ... (fungsi handleQuantityChange, increment, decrement tidak berubah)
     const handleQuantityChange = (e) => {
@@ -32,6 +34,10 @@ export default function Welcome({ auth }) {
         setQuantity(1);
     };
 
+    const closeKuponModal = () => {
+        setShowKuponModal(false);
+    };
+
     const bannerImages = [
         "/images/ikan-home.avif",
         "/images/banner2.jpg",
@@ -41,8 +47,6 @@ export default function Welcome({ auth }) {
     return (
         <AuthenticatedLayout auth={auth}>
             <Head title="Selamat Datang di Krupuk Tuna" />
-
-            {/* ... (bagian Swiper tidak berubah) ... */}
             <div className="relative">
                 <Swiper
                     modules={[Navigation, Autoplay, Pagination]}
@@ -111,7 +115,23 @@ export default function Welcome({ auth }) {
                     </button>
                 </div>
             </div>
-
+            <div className="py-16 bg-gray-50">
+                <div className="max-w-7xl mx-auto px-4 text-center">
+                    <h3 className="text-2xl font-semibold text-gray-800 mb-4">
+                        Punya Kupon Undian?
+                    </h3>
+                    <p className="text-gray-600 mb-6 max-w-lg mx-auto">
+                        Sudah punya kode kupon dari pembelian sebelumnya?
+                        Masukkan di sini untuk kami data.
+                    </p>
+                    <button
+                        onClick={() => setShowKuponModal(true)}
+                        className="px-8 py-3 bg-white text-red-600 font-bold rounded-lg shadow-md border-2 border-red-600 hover:bg-red-600 hover:text-white transition duration-300"
+                    >
+                        Input Kode Kupon Anda
+                    </button>
+                </div>
+            </div>
             {/* 6. Panggil komponen modal di sini */}
             {/* Berikan state dan fungsi yang dibutuhkan sebagai props */}
             <OrderModal
@@ -119,6 +139,7 @@ export default function Welcome({ auth }) {
                 onClose={closeModal}
                 quantity={quantity}
             />
+            <KuponModal show={showKuponModal} onClose={closeKuponModal} />
         </AuthenticatedLayout>
     );
 }
