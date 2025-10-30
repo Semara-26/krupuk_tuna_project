@@ -17,8 +17,38 @@
         @viteReactRefresh
         @vite(['resources/js/app.jsx', "resources/js/Pages/{$page['component']}.jsx"])
         @inertiaHead
+
+        <style>
+    #splash-screen {
+        position: fixed;
+        inset: 0;
+        z-index: 99999;
+        background-color: #ffffff; /* Latar putih */
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: opacity 0.5s ease-out; /* Efek fade-out */
+    }
+    #splash-screen img {
+        width: 75%;
+        max-width: 320px;
+        animation: pulse 1.5s ease-in-out infinite;
+    }
+    /* Class untuk menyembunyikan (fade-out) */
+    #splash-screen.hidden {
+        opacity: 0;
+    }
+    /* Animasi denyut (pulse) */
+    @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.7; }
+    }
+</style>
     </head>
     <body class="font-sans antialiased">
+        <div id="splash-screen">
+        <img src="images/logo1.png" alt="Logo Krupuk Tuna" />
+    </div>
         @inertia
     </body>
 </html>
