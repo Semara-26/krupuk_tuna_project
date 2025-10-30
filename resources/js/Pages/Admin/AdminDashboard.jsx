@@ -68,10 +68,10 @@ export default function AdminPage({ total_orders, active_coupon, all_coupons }) 
           
           <div className="rounded-lg bg-white p-6 shadow-md transition-shadow hover:shadow-lg">
             <h3 className="text-sm font-medium uppercase tracking-wider text-gray-500">
-              Total Pesanan
+              Jumlah Kupon yang Expired
             </h3>
             <span className="mt-2 block text-3xl font-bold text-gray-900">
-              {couponData.total_orders}
+              {couponData.expired_coupons}
             </span>
           </div>
 
