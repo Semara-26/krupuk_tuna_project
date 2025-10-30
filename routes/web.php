@@ -82,6 +82,7 @@ Route::get('/lacak', function () {
 //admin
 Route::get('/admin/login', [AdminLoginController::class, 'showAdminLogin'])->name('admin.login.view');
 Route::post('/admin/login', [AdminLoginController::class, 'adminLogin'])->name('admin.login');
+Route::get('/admin/dashboard', [AdminDashboardController::class, 'index']);
 Route::middleware('auth');
 Route::get('/admin/generate-coupons/{num}', [CouponController::class, 'couponsGetter']);
 Route::get('/dashboard', function () {

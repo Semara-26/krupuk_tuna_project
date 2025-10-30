@@ -11,7 +11,7 @@ class AdminLoginController extends Controller
     //
     public function showAdminLogin()
     {
-        return Inertia::render('auth.adminlogin');
+        return Inertia::render('admin.adminlogin');
     }
 
     public function adminLogin(Request $request)
