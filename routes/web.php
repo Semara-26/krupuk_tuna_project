@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\AdminDashboardController;
 use App\Http\Controllers\AdminLoginController;
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\CouponConfirmationController;
