@@ -13,7 +13,8 @@ class CouponConfirmation extends Model
         'email',
         'province',
         'district',
-        'online_marketplace_id',
-        'product_id'
+        'buy_platform',
+        'product_id',
+        'phone'
     ];
 }

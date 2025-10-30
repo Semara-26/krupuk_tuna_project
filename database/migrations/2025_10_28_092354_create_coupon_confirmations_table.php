@@ -16,7 +16,7 @@ return new class extends Migration
             $table->string("full_name");
             $table->string("email");
             $table->string("phone");
-            $table->string("coupon_code");
+            $table->string("coupon_code")->index();
             $table->foreign("coupon_code")->references('id')->on("coupons");
             $table->string("province");
             $table->enum("buy_platform", ["online", "offline"]);

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import ApplicationLogo from "@/Components/ApplicationLogo";
 import Footer from "@/Components/Footer";
 import Dropdown from "@/Components/Dropdown";
@@ -88,14 +88,32 @@ export default function AuthenticatedLayout({ auth, children }) {
                     </div>
                 </div>
 
-                 <div className={`sm:hidden transition-all duration-500 ease-in-out overflow-hidden ${showingNavigationDropdown ? 'max-h-screen' : 'max-h-0'}`}>
+                <div
+                    className={`sm:hidden transition-all duration-500 ease-in-out overflow-hidden ${
+                        showingNavigationDropdown ? "max-h-screen" : "max-h-0"
+                    }`}
+                >
                     {/* Menu Utama Mobile */}
                     <div className="pt-2 pb-3 space-y-1">
-                        <ResponsiveNavLink href={route('home')} active={route().current('home')}>Home</ResponsiveNavLink>
-                        <ResponsiveNavLink href={route('lacak')} active={route().current('lacak')}>Lacak</ResponsiveNavLink>
-                        <ResponsiveNavLink href={route('undian')} active={route().current('undian')}>Undian</ResponsiveNavLink>
+                        <ResponsiveNavLink
+                            href={route("home")}
+                            active={route().current("home")}
+                        >
+                            Home
+                        </ResponsiveNavLink>
+                        <ResponsiveNavLink
+                            href={route("lacak")}
+                            active={route().current("lacak")}
+                        >
+                            Lacak
+                        </ResponsiveNavLink>
+                        <ResponsiveNavLink
+                            href={route("undian")}
+                            active={route().current("undian")}
+                        >
+                            Undian
+                        </ResponsiveNavLink>
                     </div>
-
                 </div>
             </nav>
 

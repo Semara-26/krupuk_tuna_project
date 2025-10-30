@@ -14,18 +14,18 @@ class CouponController extends Controller
 
     public function couponsGetter(Int $num){
         try {
+            $cp_pdf_cntrl = new CouponPDFController();
             $res = $this->generateCoupons($num);
-            dd($res);
+            return $cp_pdf_cntrl->createFile($res, $num);
         } catch (QueryException $e) {
             if($e->errorInfo[1] == 1062){
                 $this->generateCoupons($num);
             } else {
-                // return response()->json([
-                //     'status' => 500,
-                //     'message' => 'error',
-                //     'data' => $e->getMessage()
-                // ]);
-                dd($e);
+                return response()->json([
+                    'code' => 500,
+                    'message' => 'server error',
+                    'data' => $e->getMessage()
+                ]);
             }
         }
     }
@@ -44,6 +44,7 @@ class CouponController extends Controller
             $timestamps = Carbon::now();
             array_push($coupon_code_arr, ["id" => $coupon_code, 'created_at' => $timestamps, 'updated_at'=> $timestamps]);
         }
+        Coupon::insert($coupon_code_arr);
         return $coupon_code_arr;
     }
 }

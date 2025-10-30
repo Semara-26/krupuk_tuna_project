@@ -26,7 +26,7 @@ Route::controller(CourierController::class)->group(function () {
 
 Route::post('/customer/checkout', [CheckoutController::class, 'create'])->name('order.store.popup');
 
-Route::post('/coupon/confirm', [CouponConfirmationController::class, 'store']);
+// Route::post('/coupon/confirm', [CouponConfirmationController::class, 'store']);
 
 Route::get('/undian', function () {
     // Untuk sekarang, kita kirim data pura-pura (dummy data) ke frontend.
