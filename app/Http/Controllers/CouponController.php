@@ -44,8 +44,6 @@ class CouponController extends Controller
             $timestamps = Carbon::now();
             array_push($coupon_code_arr, ["id" => $coupon_code, 'created_at' => $timestamps, 'updated_at'=> $timestamps]);
         }
-
-
         return $coupon_code_arr;
     }
 }

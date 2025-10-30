@@ -10,6 +10,7 @@ class CheckoutHistory extends Model
 
 
     protected $fillable = [
+        'email',
         'full_name',
         'customer_id',
         'quantity',

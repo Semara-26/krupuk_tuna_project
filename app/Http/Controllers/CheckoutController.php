@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Http\Resources\Resource;
 use App\Models\CheckoutHistory;
 use App\Models\Coupon;
-use App\Models\Customer;
 use App\Models\CustomerCoupon;
 use Carbon\Carbon;
 use GuzzleHttp\Promise\Create;
@@ -24,41 +23,41 @@ class CheckoutController extends Controller
     protected $order_no = "";
     protected $grand_total = "";
     //
-    public function create(Request $request)
-    {
-        $validator = FacadesValidator::make($request->all(), [
-            'email' => 'required|email',
-        ], [
-            'email.email' => 'Gunakan email yang terdaftar',
-            'required' => ':attribute harus diisi'
-        ]);
+    // public function create(Request $request)
+    // {
+    //     $validator = FacadesValidator::make($request->all(), [
+    //         'email' => 'required|email',
+    //     ], [
+    //         'email.email' => 'Gunakan email yang terdaftar',
+    //         'required' => ':attribute harus diisi'
+    //     ]);
 
-        if ($validator->fails()) {
-            return response()->json([
-                'status' => 400,
-                'message' => 'error',
-                'data' => [$validator->errors()]
-            ]);
-        }
+    //     if ($validator->fails()) {
+    //         return response()->json([
+    //             'status' => 400,
+    //             'message' => 'error',
+    //             'data' => [$validator->errors()]
+    //         ]);
+    //     }
 
-        try {
-            $validatedData = $validator->validated();
-            $email_lowercase = strtolower($validatedData['email']);
-            $this->email = $email_lowercase;
+    //     try {
+    //         $validatedData = $validator->validated();
+    //         $email_lowercase = strtolower($validatedData['email']);
+    //         $this->email = $email_lowercase;
 
-            Customer::firstOrCreate(
-                ['email' => $email_lowercase],
-                ['email' => $email_lowercase]
-            );
-            $this->createHistoryCheckout($request);
-        } catch (\Throwable $th) {
-            return response()->json([
-                'status' => 500,
-                'message' => 'error',
-                'data' => [$th->getMessage()]
-            ]);
-        }
-    }
+    //         Customer::firstOrCreate(
+    //             ['email' => $email_lowercase],
+    //             ['email' => $email_lowercase]
+    //         );
+    //         $this->createHistoryCheckout($request);
+    //     } catch (\Throwable $th) {
+    //         return response()->json([
+    //             'status' => 500,
+    //             'message' => 'error',
+    //             'data' => [$th->getMessage()]
+    //         ]);
+    //     }
+    // }
 
     public function createHistoryCheckout(Request $request)
     {
@@ -66,6 +65,7 @@ class CheckoutController extends Controller
             $email_controller = new EmailController();
             $courier_price = 0;
             $validator = FacadesValidator::make($request->all(), [
+                'email' => 'required|email',
                 'full_name' => 'required|max:255',
                 'quantity' => 'required|min:1',
                 'district_id' => 'required',
@@ -77,6 +77,7 @@ class CheckoutController extends Controller
                 'city' => 'required',
                 'address' => 'required',
             ], [
+                'email.email' => 'Bukan email!',
                 'required' => ':attribute harus diisi!'
             ]);
 
@@ -106,7 +107,7 @@ class CheckoutController extends Controller
             $result = CheckoutHistory::create($validatedData);
             $this->checkout_history_id = $result->id;
             $this->createCoupon();
-            $this->createCustomerCouponRelation();
+            // $this->createCustomerCouponRelation();
             $this->order_no = $result->order_no;
             $this->grand_total = $result->grand_total;
 
@@ -169,16 +170,16 @@ class CheckoutController extends Controller
     }
 
 
-    public function createCustomerCouponRelation()
-    {
-        try {
-            CustomerCoupon::create([
-                'customer_id' => $this->email,
-                'checkout_history_id' => $this->checkout_history_id,
-                'coupon_code' => $this->coupon
-            ]);
-        } catch (\Throwable $th) {
-            dd($th);
-        }
-    }
+    // public function createCustomerCouponRelation()
+    // {
+    //     try {
+    //         CustomerCoupon::create([
+    //             'customer_id' => $this->email,
+    //             'checkout_history_id' => $this->checkout_history_id,
+    //             'coupon_code' => $this->coupon
+    //         ]);
+    //     } catch (\Throwable $th) {
+    //         dd($th);
+    //     }
+    // }
 }

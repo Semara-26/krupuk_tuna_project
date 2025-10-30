@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AdminLoginController;
 use App\Http\Controllers\CheckoutController;
+use App\Http\Controllers\CouponConfirmationController;
 use App\Http\Controllers\CouponController;
 use App\Http\Controllers\CourierController;
 use App\Http\Controllers\LandingPageController;
@@ -25,8 +26,7 @@ Route::controller(CourierController::class)->group(function () {
 
 Route::post('/customer/checkout', [CheckoutController::class, 'create'])->name('order.store.popup');
 
-
-
+Route::post('/coupon/confirm', [CouponConfirmationController::class, 'store']);
 
 Route::get('/undian', function () {
     // Untuk sekarang, kita kirim data pura-pura (dummy data) ke frontend.

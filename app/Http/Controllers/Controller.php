@@ -8,5 +8,4 @@ use Inertia\Inertia;
 abstract class Controller
 {
     //
-  
 }

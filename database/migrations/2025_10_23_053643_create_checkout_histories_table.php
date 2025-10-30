@@ -13,8 +13,7 @@ return new class extends Migration
     {
         Schema::create('checkout_histories', function (Blueprint $table) {
             $table->id();
-            $table->string('customer_id');
-            $table->foreign('customer_id')->references('email')->on('customers');
+            $table->string('email');
             $table->string('full_name');
             $table->integer('quantity');
             $table->string('province');

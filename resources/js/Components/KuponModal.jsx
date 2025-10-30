@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import Modal from "@/Components/Modal";
 import PrimaryButton from "@/Components/PrimaryButton";
+import SecondaryButton from "@/Components/SecondaryButton";
 import TextInput from "@/Components/TextInput";
 import InputLabel from "@/Components/InputLabel";
 import InputError from "@/Components/InputError";
@@ -36,6 +37,12 @@ export default function KuponModal({ show, onClose }) {
             { id: 302, name: "Tual" },
         ],
     };
+
+    const purchaseTypeOptions = ["Offline", "Online"];
+    const productOptions = [
+        // Asumsi cuma 1 produk, bisa ditambah jika perlu
+        { id: 1, name: "Paket Kerupuk Kulit Tuna" },
+    ];
     // --- AKHIR DATA DUMMY ---
 
     const [provinces, setProvinces] = useState(dummyProvinces);
@@ -49,12 +56,14 @@ export default function KuponModal({ show, onClose }) {
         reset,
         recentlySuccessful,
     } = useForm({
-        kupon: "",
+        kupons: [""],
         email: "",
         full_name: "",
         phone: "",
         province_id: "",
         city_id: "",
+        purchase_type: "",
+        product_id: "",
     });
 
     // --- DI-COMMENT: Matikan fetch data otomatis ---
@@ -124,6 +133,28 @@ export default function KuponModal({ show, onClose }) {
         // }
     };
 
+    const handleKuponChange = (index, value) => {
+        // Buat salinan array kupons saat ini
+        const updatedKupons = [...data.kupons];
+        // Ubah nilai di index yang spesifik
+        updatedKupons[index] = value;
+        // Update state useForm
+        setData("kupons", updatedKupons);
+    };
+
+    const addKuponField = () => {
+        // Tambahkan satu string kosong baru ke array
+        setData("kupons", [...data.kupons, ""]);
+    };
+
+    const removeKuponField = (index) => {
+        // Hanya hapus jika ada lebih dari 1 field
+        if (data.kupons.length > 1) {
+            const updatedKupons = data.kupons.filter((_, i) => i !== index);
+            setData("kupons", updatedKupons);
+        }
+    };
+
     // 2. Fungsi untuk submit
     const handleSubmit = (e) => {
         e.preventDefault();
@@ -133,10 +164,32 @@ export default function KuponModal({ show, onClose }) {
         // 1. (Opsional) Cek datanya di konsol
         console.log("Data form (dummy submit):", data);
 
-        // 2. Langsung panggil logic onSuccess
+        // (Opsional) Filter kupon yang kosong sebelum submit
+        const kuponsToSubmit = data.kupons.filter(
+            (kupon) => kupon.trim() !== ""
+        );
+
+        // Cek jika tidak ada kupon valid setelah filter
+        if (kuponsToSubmit.length === 0) {
+            Swal.fire({
+                title: "Oops!",
+                text: "Harap isi setidaknya satu nomor kupon.",
+                icon: "warning",
+                confirmButtonColor: "#dc2626",
+            });
+            // Fokus ke field kupon pertama
+            document.getElementById("kupon-0")?.focus();
+            return; // Hentikan submit
+        }
+
+        console.log("Data form (dummy submit):", {
+            ...data,
+            kupons: kuponsToSubmit,
+        });
+        // Langsung panggil logic onSuccess
         Swal.fire({
             title: "Sukses! (Testing)",
-            text: "Kupon Anda telah dicatat.",
+            text: `Kupon Anda (${kuponsToSubmit.join(", ")}) telah dicatat.`,
             icon: "success",
             confirmButtonText: "Selesai",
             confirmButtonColor: "#dc2626",
@@ -165,10 +218,12 @@ export default function KuponModal({ show, onClose }) {
         //             }
         //         });
         //     },
-        //     onError: (errors) => {
+        //     onError: (errors) => handleFormError(errors)
+    };
+
+    const handleFormError = (errors) => {
         //         // 'errors' di sini adalah object berisi semua error
         //         // Contoh: { kupon: "Kupon wajib diisi", email: "Email tidak valid" }
-
         //         // Ambil semua pesan error dan format jadi list HTML
         //         const errorMessages = Object.values(errors);
         //         const htmlMessage = `
@@ -178,7 +233,6 @@ export default function KuponModal({ show, onClose }) {
         //                     .join("")}
         //             </ul>
         //         `;
-
         //         Swal.fire({
         //             title: "Oops! Ada yang Salah",
         //             html: htmlMessage,
@@ -186,23 +240,24 @@ export default function KuponModal({ show, onClose }) {
         //             confirmButtonText: "Saya Mengerti",
         //             confirmButtonColor: "#dc2626",
         //         });
-
         //         // Buat "kamus" yang memetakan key error ke ID elemen
         //         const fieldIdMap = {
-        //             kupon: "kupon",
+        //            Jika ada error di 'kupons', fokus ke field pertama ('kupon-0')
+        //             kupon: "kupon-0",
         //             province_id: "province_kupon",
         //             city_id: "city_kupon",
         //             full_name: "full_name_kupon",
         //             email: "email_kupon",
         //             phone: "phone_kupon",
+        //             purchase_type: 'purchase_type_kupon',
+        //             product_id: 'product_id_kupon',
         //         };
-
         //         // Ambil 'key' error pertama
         //         const firstErrorKey = Object.keys(errors)[0];
-
+        // Jika errornya adalah 'kupons.N' (misal kupons.1), anggap saja error 'kupons'
+        // const errorKeyForFocus = firstErrorKey.startsWith('kupons.') ? 'kupons' : firstErrorKey;
         //         // Cari ID elemen yang sesuai di "kamus"
         //         const elementIdToFocus = fieldIdMap[firstErrorKey];
-
         //         // okus ke elemen itu jika ID-nya ada
         //         // Tanda tanya (?) (optional chaining) biar aman
         //         // kalau-kalau ID-nya ngga ketemu
@@ -221,150 +276,223 @@ export default function KuponModal({ show, onClose }) {
 
     return (
         <Modal show={show} onClose={handleClose} maxWidth="md">
-            <form onSubmit={handleSubmit} className="p-6 max-h-[80vh] overflow-y-scroll">
+            <form
+                onSubmit={handleSubmit}
+                className="p-6 max-h-[80vh] overflow-y-scroll"
+            >
                 <h2 className="text-lg font-medium text-gray-900 mb-4 text-center border-b pb-2">
                     Input Kupon Undian
                 </h2>
                 <div className="space-y-4 pr-2">
-                        <div>
-                            <InputLabel
-                                htmlFor="kupon"
-                                value="Nomor Kupon Undian"
-                            />
-                            <TextInput
-                                id="kupon"
-                                value={data.kupon}
-                                onChange={(e) =>
-                                    setData("kupon", e.target.value)
-                                }
-                                className="mt-1 block w-full"
-                                required
-                                isFocused
-                            />
-                            <InputError
-                                message={errors.kupon}
-                                className="mt-2"
-                            />
+                    {data.kupons.map((kuponValue, index) => (
+                        <div key={index} className="flex items-end space-x-2">
+                            <div className="flex-grow">
+                                {/* Label hanya untuk field pertama */}
+                                {index === 0 && (
+                                    <InputLabel
+                                        htmlFor={`kupon-${index}`}
+                                        value="Nomor Kupon Undian"
+                                    />
+                                )}
+                                <TextInput
+                                    id={`kupon-${index}`} // ID unik pakai index
+                                    value={kuponValue}
+                                    onChange={(e) =>
+                                        handleKuponChange(index, e.target.value)
+                                    }
+                                    className={`mt-1 block w-full ${
+                                        index > 0 ? "mt-1" : ""
+                                    }`} // Beri margin atas jika bukan yg pertama
+                                    required // Tetap required (tapi kita filter yg kosong pas submit)
+                                    // Fokus otomatis hanya untuk field pertama
+                                    isFocused={index === 0}
+                                />
+                                {/* Tampilkan error spesifik jika ada (misal dari backend: 'kupons.1') */}
+                                <InputError
+                                    message={errors[`kupons.${index}`]}
+                                    className="mt-2"
+                                />
+                            </div>
+                            {/* Tombol Hapus hanya muncul jika ada > 1 field & bukan field pertama */}
+                            {data.kupons.length > 1 &&
+                                index > -1 && ( // Diubah index > -1 biar muncul terus
+                                    <SecondaryButton
+                                        type="button"
+                                        onClick={() => removeKuponField(index)}
+                                        className="mb-1 h-10 flex-shrink-0" // mb-1 biar sejajar input
+                                    >
+                                        X
+                                    </SecondaryButton>
+                                )}
                         </div>
-                        <div>
-                            <InputLabel
-                                htmlFor="province_kupon"
-                                value="Provinsi"
-                            />
-                            <select
-                                id="province_kupon"
-                                value={data.province_id}
-                                onChange={handleProvinceChange}
-                                className="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm"
-                                required
-                            >
-                                <option value="">Pilih Provinsi</option>
-                                {provinces.map((prov) => (
-                                    <option key={prov.id} value={prov.id}>
-                                        {prov.name}
-                                    </option>
-                                ))}
-                            </select>
-                            <InputError
-                                message={errors.province_id}
-                                className="mt-2"
-                            />
-                        </div>
+                    ))}
 
-                        <div>
-                            <InputLabel
-                                htmlFor="city_kupon"
-                                value="Kota/Kabupaten"
-                            />
-                            <select
-                                id="city_kupon"
-                                key={data.province_id} // <-- Trik reset
-                                value={data.city_id}
-                                onChange={(e) =>
-                                    setData("city_id", e.target.value)
-                                }
-                                className="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm"
-                                required
-                                disabled={cities.length === 0}
-                            >
-                                <option value="">
-                                    {cities.length === 0
-                                        ? "Pilih Provinsi Dulu"
-                                        : "Pilih Kota/Kabupaten"}
-                                </option>
-                                {cities.map((city) => (
-                                    <option key={city.id} value={city.id}>
-                                        {city.name}
-                                    </option>
-                                ))}
-                            </select>
-                            <InputError
-                                message={errors.city_id}
-                                className="mt-2"
-                            />
-                        </div>
+                    {/* Tampilkan error umum untuk 'kupons' jika ada */}
+                    <InputError message={errors.kupons} className="mt-2" />
 
-                        <div>
-                            <InputLabel
-                                htmlFor="full_name_kupon"
-                                value="Nama Sesuai KTP"
-                            />
-                            <TextInput
-                                id="full_name_kupon"
-                                value={data.full_name}
-                                onChange={(e) =>
-                                    setData("full_name", e.target.value)
-                                }
-                                className="mt-1 block w-full"
-                                required
-                            />
-                            <InputError
-                                message={errors.full_name}
-                                className="mt-2"
-                            />
-                        </div>
-
-                        <div>
-                            <InputLabel htmlFor="email_kupon" value="Email" />
-                            <TextInput
-                                id="email_kupon"
-                                type="email"
-                                value={data.email}
-                                onChange={(e) =>
-                                    setData("email", e.target.value)
-                                }
-                                className="mt-1 block w-full"
-                                required
-                                placeholder="Contoh: Og8M7@example.com"
-                            />
-                            <InputError
-                                message={errors.email}
-                                className="mt-2"
-                            />
-                        </div>
-
-                        <div>
-                            <InputLabel
-                                htmlFor="phone_kupon"
-                                value="No Whatsapp"
-                            />
-                            <TextInput
-                                id="phone_kupon"
-                                type="tel"
-                                value={data.phone}
-                                onChange={(e) =>
-                                    setData("phone", e.target.value)
-                                }
-                                className="mt-1 block w-full"
-                                required
-                                placeholder="Contoh: 08123456789"
-                            />
-                            <InputError
-                                message={errors.phone}
-                                className="mt-2"
-                            />
-                        </div>
+                    {/* Tombol Tambah Kupon */}
+                    <div className="flex justify-start mt-2">
+                        <button
+                            type="button"
+                            onClick={addKuponField}
+                            className="text-sm text-blue-600 hover:text-blue-800 focus:outline-none"
+                        >
+                            + Tambah Kupon Lain
+                        </button>
                     </div>
+                    <div>
+                        <div>
+                            <InputLabel
+                                htmlFor="purchase_type_kupon"
+                                value="Jenis Pembelian"
+                            />
+                            <select
+                                id="purchase_type_kupon"
+                                value={data.purchase_type}
+                                onChange={(e) =>
+                                    setData("purchase_type", e.target.value)
+                                }
+                                className="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm"
+                                required
+                            >
+                                <option value="">Pilih Jenis Pembelian</option>
+                                {purchaseTypeOptions.map((type) => (
+                                    <option key={type} value={type}>
+                                        {type}
+                                    </option>
+                                ))}
+                            </select>
+                            <InputError
+                                message={errors.purchase_type}
+                                className="mt-2"
+                            />
+                        </div>
+
+                        {/* TAMBAH: Dropdown Produk */}
+                        <div>
+                            <InputLabel
+                                htmlFor="product_id_kupon"
+                                value="Produk yang Dibeli"
+                            />
+                            <select
+                                id="product_id_kupon"
+                                value={data.product_id}
+                                onChange={(e) =>
+                                    setData("product_id", e.target.value)
+                                }
+                                className="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm"
+                                required
+                            >
+                                <option value="">Pilih Produk</option>
+                                {productOptions.map((product) => (
+                                    <option key={product.id} value={product.id}>
+                                        {product.name}
+                                    </option>
+                                ))}
+                            </select>
+                            <InputError
+                                message={errors.product_id}
+                                className="mt-2"
+                            />
+                        </div>
+                        
+                        <InputLabel htmlFor="province_kupon" value="Provinsi" />
+                        <select
+                            id="province_kupon"
+                            value={data.province_id}
+                            onChange={handleProvinceChange}
+                            className="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm"
+                            required
+                        >
+                            <option value="">Pilih Provinsi</option>
+                            {provinces.map((prov) => (
+                                <option key={prov.id} value={prov.id}>
+                                    {prov.name}
+                                </option>
+                            ))}
+                        </select>
+                        <InputError
+                            message={errors.province_id}
+                            className="mt-2"
+                        />
+                    </div>
+
+                    <div>
+                        <InputLabel
+                            htmlFor="city_kupon"
+                            value="Kota/Kabupaten"
+                        />
+                        <select
+                            id="city_kupon"
+                            key={data.province_id} // <-- Trik reset
+                            value={data.city_id}
+                            onChange={(e) => setData("city_id", e.target.value)}
+                            className="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm"
+                            required
+                            disabled={cities.length === 0}
+                        >
+                            <option value="">
+                                {cities.length === 0
+                                    ? "Pilih Provinsi Dulu"
+                                    : "Pilih Kota/Kabupaten"}
+                            </option>
+                            {cities.map((city) => (
+                                <option key={city.id} value={city.id}>
+                                    {city.name}
+                                </option>
+                            ))}
+                        </select>
+                        <InputError message={errors.city_id} className="mt-2" />
+                    </div>
+
+                    <div>
+                        <InputLabel
+                            htmlFor="full_name_kupon"
+                            value="Nama Sesuai KTP"
+                        />
+                        <TextInput
+                            id="full_name_kupon"
+                            value={data.full_name}
+                            onChange={(e) =>
+                                setData("full_name", e.target.value)
+                            }
+                            className="mt-1 block w-full"
+                            required
+                        />
+                        <InputError
+                            message={errors.full_name}
+                            className="mt-2"
+                        />
+                    </div>
+
+                    <div>
+                        <InputLabel htmlFor="email_kupon" value="Email" />
+                        <TextInput
+                            id="email_kupon"
+                            type="email"
+                            value={data.email}
+                            onChange={(e) => setData("email", e.target.value)}
+                            className="mt-1 block w-full"
+                            required
+                            placeholder="Contoh: Og8M7@example.com"
+                        />
+                        <InputError message={errors.email} className="mt-2" />
+                    </div>
+
+                    <div>
+                        <InputLabel htmlFor="phone_kupon" value="No Whatsapp" />
+                        <TextInput
+                            id="phone_kupon"
+                            type="tel"
+                            value={data.phone}
+                            onChange={(e) => setData("phone", e.target.value)}
+                            className="mt-1 block w-full"
+                            required
+                            placeholder="Contoh: 08123456789"
+                        />
+                        <InputError message={errors.phone} className="mt-2" />
+                    </div>
+                </div>
                 <div className="mt-6 flex justify-end">
                     <PrimaryButton disabled={processing}>
                         Simpan Kupon

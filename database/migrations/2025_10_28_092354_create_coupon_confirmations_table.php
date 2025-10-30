@@ -15,10 +15,13 @@ return new class extends Migration
             $table->id();
             $table->string("full_name");
             $table->string("email");
+            $table->string("phone");
             $table->string("coupon_code");
             $table->foreign("coupon_code")->references('id')->on("coupons");
             $table->string("province");
-            $table->string("district");
+            $table->enum("buy_platform", ["online", "offline"]);
+            $table->unsignedBigInteger('product_id');
+            $table->foreign("product_id")->references('id')->on('products')->cascadeOnDelete()->cascadeOnUpdate();
             $table->timestamps();
         });
     }
