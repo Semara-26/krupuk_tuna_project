@@ -1,7 +1,6 @@
 import React from 'react';
-import { couponData } from "/resources/js/Pages/Admin/couponData.jsx";
 
-export default function AdminPage({ total_orders, active_coupon, all_coupons }) {
+export default function AdminPage({ expired_coupons, active_coupons, all_coupons }) {
   return (
     <div 
       className="grid h-screen grid-cols-[240px_1fr] grid-rows-[60px_1fr]"
@@ -71,7 +70,7 @@ export default function AdminPage({ total_orders, active_coupon, all_coupons }) 
               Jumlah Kupon yang Expired
             </h3>
             <span className="mt-2 block text-3xl font-bold text-gray-900">
-              {couponData.expired_coupons}
+              {expired_coupons}
             </span>
           </div>
 
@@ -80,7 +79,7 @@ export default function AdminPage({ total_orders, active_coupon, all_coupons }) 
               Jumlah Kupon yang Aktif saat ini
             </h3>
             <span className="mt-2 block text-3xl font-bold text-gray-900">
-              {couponData.active_coupon}
+              {active_coupons}
             </span>
           </div>
 
@@ -89,7 +88,7 @@ export default function AdminPage({ total_orders, active_coupon, all_coupons }) 
               Total Semua Kupon
             </h3>
             <span className="mt-2 block text-3xl font-bold text-gray-900">
-              {couponData.all_coupons}
+              {all_coupons}
             </span>
           </div>
           
