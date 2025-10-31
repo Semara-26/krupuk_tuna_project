@@ -54,9 +54,9 @@ Route::get('/undian', function () {
     return Inertia::render('Undian', [
         'tanggalUndian' => $tanggalBerikutnya,
         'pemenang' => [
-            ['id' => 1, 'nomor_kupon' => 'KT-845621', 'nama' => 'Budi Santoso', 'hadiah' => 'Sepeda Motor'],
-            ['id' => 2, 'nomor_kupon' => 'KT-778934', 'nama' => 'Ani Wijaya', 'hadiah' => 'Smartphone'],
-            ['id' => 3, 'nomor_kupon' => 'KT-912345', 'nama' => 'Cahyo Aji', 'hadiah' => 'Voucher Belanja'],
+            ['id' => 1, 'nomor_kupon' => 'KT-845621', 'nama' => 'Budi Santoso', 'nomor_telepon' => '08123456789', 'hadiah' => 'Sepeda Motor'],
+            ['id' => 2, 'nomor_kupon' => 'KT-778934', 'nama' => 'Ani Wijaya','nomor_telepon' => '08123456788', 'hadiah' => 'Smartphone'],
+            ['id' => 3, 'nomor_kupon' => 'KT-912345', 'nama' => 'Cahyo Aji','nomor_telepon' => '08123456786', 'hadiah' => 'Voucher Belanja'],
         ], 
         'hadiahBerikutnya' => [
             ['id' => 1, 'nama' => 'Hadiah Utama', 'detail' => '1x Sepeda Motor Listrik'],

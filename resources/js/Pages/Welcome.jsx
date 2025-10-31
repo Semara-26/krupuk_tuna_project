@@ -47,7 +47,7 @@ export default function Welcome({ auth }) {
 
     return (
         <AuthenticatedLayout auth={auth}>
-            <Head title="Selamat Datang di Krupuk Tuna" />
+            <Head title="Selamat Datang di Kerupuk Tuna" />
             <div className="relative">
                 <Swiper
                     modules={[Navigation, Autoplay, Pagination]}
@@ -168,7 +168,7 @@ export default function Welcome({ auth }) {
                             // 'route('undian')' ini otomatis
                             // akan ngarah ke subdomain
                             href={route("undian")}
-                            className="px-8 py-3 bg-red-600 text-white font-bold rounded-lg shadow-md hover:bg-red-700 transition duration-300 w-full sm:w-auto"
+                            className="px-8 py-3 bg-red-600 text-white font-bold rounded-lg shadow-md border-2 border-red-600 hover:bg-white hover:text-red-700 transition duration-300 w-full sm:w-auto"
                         >
                             Lihat Pemenang Undian
                         </Link>
