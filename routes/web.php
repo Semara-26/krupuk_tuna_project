@@ -40,6 +40,11 @@ Route::get('/undian', function () {
             ['id' => 1, 'nomor_kupon' => 'KT-845621', 'nama' => 'Budi Santoso', 'hadiah' => 'Sepeda Motor'],
             ['id' => 2, 'nomor_kupon' => 'KT-778934', 'nama' => 'Ani Wijaya', 'hadiah' => 'Smartphone'],
             ['id' => 3, 'nomor_kupon' => 'KT-912345', 'nama' => 'Cahyo Aji', 'hadiah' => 'Voucher Belanja'],
+        ], 
+        'hadiahBerikutnya' => [
+            ['id' => 1, 'nama' => 'Hadiah Utama', 'detail' => '1x Sepeda Motor Listrik'],
+            ['id' => 2, 'nama' => 'Hadiah Hiburan', 'detail' => '5x Smartphone Keren'],
+            ['id' => 3, 'nama' => 'Hadiah Apresiasi', 'detail' => '10x Voucher Belanja @ Rp 100.000']
         ]
     ]);
 })->name('undian');

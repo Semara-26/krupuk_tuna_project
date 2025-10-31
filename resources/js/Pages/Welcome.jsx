@@ -1,5 +1,5 @@
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
-import { Head } from "@inertiajs/react";
+import { Head, Link } from "@inertiajs/react";
 import { useState } from "react";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Navigation, Autoplay, Pagination } from "swiper/modules";
@@ -156,12 +156,24 @@ export default function Welcome({ auth }) {
                         Sudah punya kode kupon dari pembelian sebelumnya?
                         Masukkan di sini untuk kami data.
                     </p>
-                    <button
-                        onClick={() => setShowKuponModal(true)}
-                        className="px-8 py-3 bg-white text-red-600 font-bold rounded-lg shadow-md border-2 border-red-600 hover:bg-red-600 hover:text-white transition duration-300"
-                    >
-                        Input Kode Kupon Anda
-                    </button>
+                    <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+                        <button
+                            onClick={() => setShowKuponModal(true)}
+                            className="px-8 py-3 bg-white text-red-600 font-bold rounded-lg shadow-md border-2 border-red-600 hover:bg-red-600 hover:text-white transition duration-300 w-full sm:w-auto"
+                        >
+                            Input Kode Kupon Anda
+                        </button>
+
+                        <Link
+                            // 'route('undian')' ini otomatis
+                            // akan ngarah ke subdomain
+                            href={route("undian")}
+                            className="px-8 py-3 bg-red-600 text-white font-bold rounded-lg shadow-md hover:bg-red-700 transition duration-300 w-full sm:w-auto"
+                        >
+                            Lihat Pemenang Undian
+                        </Link>
+                        {/* --- AKHIR TOMBOL BARU --- */}
+                    </div>
                 </div>
             </div>
             {/* 6. Panggil komponen modal di sini */}
