@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\AdminDashboardController;
 use App\Http\Controllers\AdminLoginController;
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\Controller;
@@ -112,7 +113,8 @@ Route::middleware('auth')->group(function () {
 //admin
 Route::get('/admin/login', [AdminLoginController::class, 'showAdminLogin'])->name('admin.login.view');
 Route::post('/admin/login', [AdminLoginController::class, 'adminLogin'])->name('admin.login');
-Route::middleware('auth');
+Route::middleware('auth');  
+Route::get('/admin/dashboard', [AdminDashboardController::class, 'index']);
 
 
 
