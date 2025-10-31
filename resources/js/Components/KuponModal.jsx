@@ -18,35 +18,14 @@ export default function KuponModal({ show, onClose }) {
         { id: 3, name: "MALUKU" },
     ];
 
-    const dummyCitiesData = {
-        1: [
-            // Kota untuk Jawa Barat (ID 1)
-            { id: 101, name: "Bandung" },
-            { id: 102, name: "Bogor" },
-            { id: 103, name: "Bekasi" },
-        ],
-        2: [
-            // Kota untuk Bali (ID 2)
-            { id: 201, name: "Denpasar" },
-            { id: 202, name: "Badung" },
-            { id: 203, name: "Gianyar" },
-        ],
-        3: [
-            // Kota untuk Maluku (ID 3)
-            { id: 301, name: "Ambon" },
-            { id: 302, name: "Tual" },
-        ],
-    };
-
     const purchaseTypeOptions = ["Offline", "Online"];
     const productOptions = [
         // Asumsi cuma 1 produk, bisa ditambah jika perlu
         { id: 1, name: "Paket Kerupuk Kulit Tuna" },
+        { id: 2, name: "Paket Kerupuk Tuna Premium" },
     ];
-    // --- AKHIR DATA DUMMY ---
 
     const [provinces, setProvinces] = useState(dummyProvinces);
-    const [cities, setCities] = useState([]);
     const {
         data,
         setData,
@@ -61,7 +40,6 @@ export default function KuponModal({ show, onClose }) {
         full_name: "",
         phone: "",
         province_id: "",
-        city_id: "",
         purchase_type: "",
         product_id: "",
     });
@@ -98,39 +76,6 @@ export default function KuponModal({ show, onClose }) {
     const handleProvinceChange = async (e) => {
         const provinceId = e.target.value;
         setData("province_id", provinceId);
-
-        // Reset city
-        setCities([]);
-        setData("city_id", "");
-
-        // --- Logic baru (dummy) ---
-        console.log("Mengambil data dummy kota untuk province ID:", provinceId);
-        const fetchedCities = dummyCitiesData[provinceId] || [];
-        setCities(fetchedCities);
-
-        // Logic asli di comment dulu
-        // if (provinceId) {
-        //     try {
-        //         // !!! GANTI NAMA ROUTE ini sesuai info backend
-        //         const res = await axios.get(
-        //             route("wilayah.city.get", { province_id: provinceId })
-        //         );
-
-        //         // Sesuaikan struktur data jika beda
-        //         if (
-        //             res.data &&
-        //             res.data.data &&
-        //             Array.isArray(res.data.data.data)
-        //         ) {
-        //             setCities(res.data.data.data);
-        //         } else {
-        //             setCities(res.data.data);
-        //         }
-        //     } catch (err) {
-        //         console.error("Failed to load cities:", err);
-        //         setCities([]);
-        //     }
-        // }
     };
 
     const handleKuponChange = (index, value) => {
@@ -245,7 +190,6 @@ export default function KuponModal({ show, onClose }) {
         //            Jika ada error di 'kupons', fokus ke field pertama ('kupon-0')
         //             kupon: "kupon-0",
         //             province_id: "province_kupon",
-        //             city_id: "city_kupon",
         //             full_name: "full_name_kupon",
         //             email: "email_kupon",
         //             phone: "phone_kupon",
@@ -270,7 +214,6 @@ export default function KuponModal({ show, onClose }) {
         onClose();
         setTimeout(() => {
             reset();
-            setCities([]);
         }, 300);
     };
 
@@ -306,6 +249,7 @@ export default function KuponModal({ show, onClose }) {
                                     required // Tetap required (tapi kita filter yg kosong pas submit)
                                     // Fokus otomatis hanya untuk field pertama
                                     isFocused={index === 0}
+                                    placeholder={`Contoh: AWRS2901`}
                                 />
                                 {/* Tampilkan error spesifik jika ada (misal dari backend: 'kupons.1') */}
                                 <InputError
@@ -395,7 +339,7 @@ export default function KuponModal({ show, onClose }) {
                                 className="mt-2"
                             />
                         </div>
-                        
+
                         <InputLabel htmlFor="province_kupon" value="Provinsi" />
                         <select
                             id="province_kupon"
@@ -419,34 +363,6 @@ export default function KuponModal({ show, onClose }) {
 
                     <div>
                         <InputLabel
-                            htmlFor="city_kupon"
-                            value="Kota/Kabupaten"
-                        />
-                        <select
-                            id="city_kupon"
-                            key={data.province_id} // <-- Trik reset
-                            value={data.city_id}
-                            onChange={(e) => setData("city_id", e.target.value)}
-                            className="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm"
-                            required
-                            disabled={cities.length === 0}
-                        >
-                            <option value="">
-                                {cities.length === 0
-                                    ? "Pilih Provinsi Dulu"
-                                    : "Pilih Kota/Kabupaten"}
-                            </option>
-                            {cities.map((city) => (
-                                <option key={city.id} value={city.id}>
-                                    {city.name}
-                                </option>
-                            ))}
-                        </select>
-                        <InputError message={errors.city_id} className="mt-2" />
-                    </div>
-
-                    <div>
-                        <InputLabel
                             htmlFor="full_name_kupon"
                             value="Nama Sesuai KTP"
                         />
@@ -458,6 +374,7 @@ export default function KuponModal({ show, onClose }) {
                             }
                             className="mt-1 block w-full"
                             required
+                            placeholder="Contoh: John Doe"
                         />
                         <InputError
                             message={errors.full_name}
@@ -492,6 +409,16 @@ export default function KuponModal({ show, onClose }) {
                         />
                         <InputError message={errors.phone} className="mt-2" />
                     </div>
+                </div>
+                <div className="mt-6 text-xs text-center text-gray-500 bg-gray-50 p-3 rounded-lg border">
+                    <p>
+                        <strong>Catatan:</strong> Kupon yang di-submit setelah
+                        hari{" "}
+                        <strong className="text-gray-700">
+                            Jumat, pkl 19.00 WITA
+                        </strong>
+                        , akan diikutkan pada undian minggu berikutnya.
+                    </p>
                 </div>
                 <div className="mt-6 flex justify-end">
                     <PrimaryButton disabled={processing}>
