@@ -160,16 +160,6 @@ export default function Undian({
                             >
                                 Input Kupon Anda
                             </Link>
-
-                            {/* Tombol ke Shopee/Tiktok (Link Eksternal) */}
-                            {/* <a
-                                href="https://www.shopee.co.id" // <-- GANTI URL SHOPEE/TIKTOK DI SINI
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="px-8 py-3 bg-white text-red-600 font-bold rounded-lg shadow-md border-2 border-red-600 hover:bg-red-50 transition duration-300"
-                            >
-                                Beli Krupuk Tuna Sekarang
-                            </a> */}
                         </div>
                     </div>
                 </div>

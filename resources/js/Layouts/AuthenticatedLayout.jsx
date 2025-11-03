@@ -4,9 +4,43 @@ import Footer from "@/Components/Footer";
 import Dropdown from "@/Components/Dropdown";
 import NavLink from "@/Components/NavLink";
 import ResponsiveNavLink from "@/Components/ResponsiveNavLink";
+import ActivityPopup from "@/Components/ActivityPopup";
 import { Link } from "@inertiajs/react";
 import Lottie from "lottie-react";
 import fishJumping from "./Fish Jumping.json";
+
+const dummyActivities = [
+    {
+        type: "kupon",
+        user: "Semara D. (Bali)",
+        action: "baru saja menukarkan 3 kupon!",
+    },
+    {
+        type: "menang",
+        user: "Budi S. (Jakarta)",
+        action: "memenangkan Hadiah Hiburan!",
+    },
+    {
+        type: "kupon",
+        user: "Agus W. (Surabaya)",
+        action: "baru saja menukarkan 1 kupon!",
+    },
+    {
+        type: "menang",
+        user: "Ani W. (Bandung)",
+        action: "memenangkan Voucher Belanja!",
+    },
+    {
+        type: "kupon",
+        user: "Cahyo A. (Yogyakarta)",
+        action: "baru saja menukarkan 5 kupon!",
+    },
+];
+
+// Helper untuk ambil data acak
+const getRandomActivity = () => {
+    return dummyActivities[Math.floor(Math.random() * dummyActivities.length)];
+};
 
 export default function AuthenticatedLayout({
     auth,
@@ -17,6 +51,64 @@ export default function AuthenticatedLayout({
     const [showingNavigationDropdown, setShowingNavigationDropdown] =
         useState(false);
     const user = auth ? auth.user : null;
+
+    const [currentActivity, setCurrentActivity] = useState(null);
+
+    useEffect(() => {
+        // Fungsi untuk ganti notifikasi
+        // --- BLOK LAMA (DUMMY) ---
+        const cycleActivity = () => {
+            // Sembunyikan notifikasi yang lama (memicu animasi 'exit')
+            setCurrentActivity(null);
+
+            // Tunggu 3 detik (biar animasi 'exit' selesai)
+            setTimeout(() => {
+                // Ambil data acak baru
+                const newActivityData = getRandomActivity();
+                const newActivity = {
+                    ...newActivityData,
+                    timestamp: Date.now(), // Tambahkan 'timestamp'
+                };
+                // Tampilkan notifikasi baru (memicu animasi 'enter')
+                setCurrentActivity(newActivity);
+            }, 3000); // Jeda 3 detik
+        };
+
+        // --- BLOK BARU (PAKAI API) ---
+        // const fetchActivity = async () => {
+        //     try {
+                // 1. Sembunyikan pop-up lama (jika ada)
+        //         setCurrentActivity(null);
+
+                // 2. Ambil data baru dari API
+        //         const res = await axios.get('/api/recent-activity'); // <-- Panggil API backend
+                
+                // 3. (PENTING) Tunggu 1 detik biar animasi 'exit' selesai
+        //         await new Promise(resolve => setTimeout(resolve, 1000));
+
+                // 4. Tampilkan data baru
+                // Pastikan data backend punya 'timestamp' asli
+        //         setCurrentActivity(res.data); 
+
+        //     } catch (err) {
+                // Kalau error, ya jangan tampilkan apa-apa
+        //         console.error("Gagal fetch activity:", err);
+        //         setCurrentActivity(null);
+        //     }
+        // };
+
+        // 1. Tampilkan notifikasi pertama setelah 10 detik
+        const initialTimeout = setTimeout(cycleActivity, 10000);
+
+        // 2. Ganti notifikasi setiap 30 detik
+        const interval = setInterval(cycleActivity, 30000);
+
+        // Cleanup (wajib)
+        return () => {
+            clearTimeout(initialTimeout);
+            clearInterval(interval);
+        };
+    }, []); // [] = Hanya jalan sekali
 
     return (
         <div
@@ -188,6 +280,10 @@ export default function AuthenticatedLayout({
                     <Footer />
                 </>
             )}
+            <ActivityPopup
+                activity={currentActivity}
+                onHide={() => setCurrentActivity(null)} // Biar bisa ditutup manual
+            />
         </div>
     );
 }
