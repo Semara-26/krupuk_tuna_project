@@ -5,22 +5,6 @@ export default function AdminPage({
     active_coupons,
     all_coupons,
 }) {
-    const handleCheckCoupon = (event) => {
-        event.preventDefault();
-
-        const couponCode = event.target.elements.couponCode.value;
-
-        if (couponCode === "AMPHOREUS") {
-            alert('Kitnya CYRENE MID!!!');
-        } else if (couponCode === "KINGYUAN999") {
-            alert('KARAKTER INVESTASI JANGKA PANJANG KEBANGGAAN KING RAMA!!!');
-        } else {
-            alert("Kupon tidak ditemukan. Silakan cek kembali.");
-        }
-
-        event.target.reset();
-    };
-
     return (
         <div
             className="grid h-screen grid-cols-[240px_1fr] grid-rows-[60px_1fr]"
@@ -50,7 +34,7 @@ export default function AdminPage({
                 <ul className="m-0 mt-5 list-none p-0">
                     <li>
                         <a
-                            href="dasboard"
+                            href="#"
                             className="mb-1 block rounded-md bg-blue-500 p-3 font-bold text-white no-underline"
                         >
                             Dashboard
@@ -58,7 +42,7 @@ export default function AdminPage({
                     </li>
                     <li>
                         <a
-                            href="buat-kupon"
+                            href="#"
                             className="mb-1 block rounded-md p-3 text-gray-200 no-underline transition-colors duration-150 hover:bg-blue-700"
                         >
                             Buat Kupon
@@ -77,7 +61,7 @@ export default function AdminPage({
                             href="#"
                             className="mb-1 block rounded-md p-3 text-gray-200 no-underline transition-colors duration-150 hover:bg-blue-700"
                         >
-                            Menu Super Admin
+                            Log out
                         </a>
                     </li>
                     <li>
@@ -85,7 +69,7 @@ export default function AdminPage({
                             href="#"
                             className="mb-1 block rounded-md p-3 text-gray-200 no-underline transition-colors duration-150 hover:bg-blue-700"
                         >
-                            Log out
+                            Superadmin
                         </a>
                     </li>
                 </ul>
@@ -103,7 +87,7 @@ export default function AdminPage({
                 <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-3">
                     <div className="rounded-lg bg-white p-6 shadow-md transition-shadow hover:shadow-lg">
                         <h3 className="text-sm font-medium uppercase tracking-wider text-gray-500">
-                            Jumlah Kupon yang Sudah Digunakan
+                            Jumlah Kupon yang Expired
                         </h3>
                         <span className="mt-2 block text-3xl font-bold text-gray-900">
                             {expired_coupons}
@@ -112,7 +96,7 @@ export default function AdminPage({
 
                     <div className="rounded-lg bg-white p-6 shadow-md transition-shadow hover:shadow-lg">
                         <h3 className="text-sm font-medium uppercase tracking-wider text-gray-500">
-                            Jumlah Kupon yang Belum Digunakan
+                            Jumlah Kupon yang Aktif saat ini
                         </h3>
                         <span className="mt-2 block text-3xl font-bold text-gray-900">
                             {active_coupons}
@@ -121,35 +105,12 @@ export default function AdminPage({
 
                     <div className="rounded-lg bg-white p-6 shadow-md transition-shadow hover:shadow-lg">
                         <h3 className="text-sm font-medium uppercase tracking-wider text-gray-500">
-                            Jumlah Kupon yang Akan di Undi
+                            Total Semua Kupon
                         </h3>
                         <span className="mt-2 block text-3xl font-bold text-gray-900">
                             {all_coupons}
                         </span>
                     </div>
-                </div>
-
-                <div className="mt-8 rounded-lg bg-white p-6 shadow-md">
-                    <h3 className="mt-0 text-xl font-semibold text-gray-800">
-                        Cek Status Kupon
-                    </h3>
-                    <p className="mb-4 text-gray-600">
-                        Masukkan kode kupon untuk melihat statusnya.
-                    </p>
-                    <form className="flex" onSubmit={handleCheckCoupon}>
-                        <input
-                            type="text"
-                            name="couponCode"
-                            placeholder="Masukkan kode kupon..."
-                            className="flex-grow rounded-l-md border border-gray-300 px-4 py-2 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-emerald-500"
-                        />
-                        <button
-                            type="submit"
-                            className="rounded-r-md bg-emerald-600 px-5 py-2 font-medium text-white hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"
-                        >
-                            Cek Kupon
-                        </button>
-                    </form>
                 </div>
             </main>
         </div>
