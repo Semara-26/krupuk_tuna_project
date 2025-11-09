@@ -152,7 +152,7 @@ export default function KuponModal({ show, onClose }) {
         //         // Tampilkan SweetAlert
         //         Swal.fire({
         //             title: "Sukses!",
-        //             text: "Kupon Anda telah dicatat.",
+        //             text: `Kupon Anda (${kuponsToSubmit.join(", ")}) telah dicatat.`,
         //             icon: "success",
         //             confirmButtonText: "Selesai",
         //             confirmButtonColor: "#dc2626", // Opsional: Samain warna tombol (merah)
