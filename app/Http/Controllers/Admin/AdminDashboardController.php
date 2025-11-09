@@ -1,7 +1,8 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Controller;
 use App\Models\Coupon;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -9,22 +10,22 @@ use Inertia\Inertia;
 class AdminDashboardController extends Controller
 {
     //
-    public function index(){
+        public function index(){
         $all_coupon = Coupon::all();
-        $expired_coupons = [];
-        $active_coupons = [];
+        $expired_coupons = 0;
+        $active_coupons = 0;
         foreach ($all_coupon as $coupon) {
             if($coupon->status){
-                array_push($expired_coupons, $coupon);
+                $expired_coupons ++;
             } else {
-                array_push($active_coupons, $coupon);
+                $active_coupons++;
             }
         }
         
         return Inertia::render('Admin/AdminDashboard', [
             "all_coupons" => count($all_coupon),
-            "expired_coupons" => count($expired_coupons),
-            "active_coupons" => count($active_coupons)
+            "expired_coupons" => $expired_coupons,
+            "active_coupons" => $active_coupons
         ]);
     }
 }

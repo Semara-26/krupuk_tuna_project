@@ -18,10 +18,9 @@ class CouponConfirmationController extends Controller
             'coupon_code.*' => 'required|min:8|max:8',
             'full_name' => 'required',
             'email' => 'required|email',
-            'province' => 'required',
+            'address' => 'required',
             'phone' => 'required',
             'buy_platform' => 'required',
-            'product_id' => 'required|integer'
         ], [
             'required' => 'tidak boleh kosong',
             'email.email' => 'Bukan email',
@@ -38,33 +37,24 @@ class CouponConfirmationController extends Controller
         }
 
         try {
+            $coupon_controller = new CouponController();
             $data = [];
             $validatedData = $validator->validated();
             foreach ($validatedData["coupon_code"] as $cp_code) {
-                $coupon_checked = $this->checkCoupon($cp_code);
-                if ($coupon_checked) {
-                    $coupon_confirmed = $this->confirmCoupon($cp_code);
-                    if ($coupon_confirmed) {
-                        $validatedData["coupon_code"] = $cp_code;
-                        $res = CouponConfirmation::create($validatedData);
-                        array_push($data, [
-                            'status' => $coupon_confirmed,
-                            'message' => 'Kupon sudah disimpan',
-                            'data' => [$res]
-                        ]);
-                    } else {
-                        array_push($data, [
-                            'status' => $coupon_confirmed,
-                            'message' => 'Kupon sudah diredeem',
-                            'data' => [$cp_code]
-                        ]);
-                    }
+                $res = $coupon_controller->checkCoupon($cp_code);
+                $status = $res["status"];
+                if ($status) {
+                    $dataToStore = $validatedData;
+                    $dataToStore['coupon_code'] = $cp_code;
+
+                    $store_res = CouponConfirmation::create($dataToStore);
+                    $data[] = [
+                        'status' => $status,
+                        'message' => 'Kupon sudah disimpan',
+                        'data' => [$store_res]
+                    ];
                 } else {
-                    array_push($data, [
-                        'status' => $coupon_checked,
-                        'message' => 'Kode kupon tidak ditemukan',
-                        'data' => [$cp_code]
-                    ]);
+                    $data[] = $res["data"];
                 }
             }
             return response()->json([

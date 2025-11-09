@@ -11,12 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('products', function (Blueprint $table) {
+        Schema::create('events', function (Blueprint $table) {
             $table->id();
-            $table->string('name');
-            $table->string('image_path')->nullable();
-            $table->integer('qty')->default(0);
-            $table->integer('price');
+            $table->string("title")->index();
+            $table->dateTime('start_date');
+            $table->dateTime('last_buy_date');
+            $table->enum('status', [0, 1])->default(0);
+            $table->unsignedInteger("total_winners");
             $table->timestamps();
         });
     }
@@ -26,6 +27,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('products');
+        Schema::dropIfExists('gacha_dates');
     }
 };

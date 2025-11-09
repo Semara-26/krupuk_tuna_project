@@ -4,6 +4,13 @@
 <meta charset="utf-8" />
 <title>Template Cetak Kupon</title>
 <style>
+    :root {
+        --gap-horizontal: 8mm;  /* Gap between columns */
+        --gap-vertical: 2mm;    /* Gap between rows */
+        --coupon-height: 35mm;  /* Height of each coupon */
+        --border-radius: 8px;   /* Corner roundness */
+    }
+
     @page {
         size: A4 portrait;
         margin: 10mm;
@@ -18,70 +25,63 @@
 
     .page {
         display: flex;
+        flex-direction: row;
         flex-wrap: wrap;
         justify-content: space-between;
+        align-content: flex-start;
         page-break-after: always;
+        gap: var(--gap-vertical) var(--gap-horizontal);
     }
 
-    /* Ukuran sedikit lebih kecil dari versi asli */
     .coupon {
-        width: 80mm;   /* dari 85 → 80mm */
-        height: 48mm;  /* dari 53 → 48mm */
-        border: 2px solid #333;
-        border-radius: 15px;
-        margin-bottom: 8mm;
+        width: calc(50% - (var(--gap-horizontal) / 2));
+        height: var(--coupon-height);
+        border: 1px solid #00ff00; /* bright green outline */
+        border-radius: var(--border-radius);
+        margin-bottom: 0;
         overflow: hidden;
         display: flex;
         flex-direction: column;
+        justify-content: center;
         box-sizing: border-box;
-        page-break-inside: avoid;
         background: #fff;
     }
 
-    .coupon-top {
-        flex: 1;
-        padding: 4mm;
+    .coupon-content {
         text-align: center;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
+        padding: 4px 8px;
     }
 
-    .coupon-top .label {
+    .label {
         font-size: 10px;
-        color: #555;
-        text-transform: uppercase;
+        color: #333;
+        margin-bottom: 2px;
     }
 
-    .coupon-top .code {
-        font-family: 'Courier New', Courier, monospace;
-        font-size: 20px;
+    .code {
+        font-size: 18px;
         font-weight: bold;
-        color: #000;
-        letter-spacing: 1px;
-        margin-top: 4px;
+        margin-bottom: 3px;
     }
 
-    .coupon-bottom {
-        flex: 1;
-        padding: 4mm;
-        text-align: center;
-        border-top: 2px solid #333;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
+    .divider {
+        width: 100%;
+        height: 1px;
+        background: #000;
+        margin: 2px 0 4px 0;
     }
 
-    .coupon-bottom .info {
+    .info {
         font-size: 10px;
-        color: #555;
+        color: #333;
+        line-height: 1.2;
     }
 
-    .coupon-bottom .website {
+    .website {
         font-size: 12px;
         font-weight: bold;
-        color: #000;
-        margin-top: 4px;
+        font-style: italic;
+        margin-top: 2px;
     }
 
     .empty { visibility: hidden; }
@@ -89,21 +89,20 @@
 </head>
 <body>
 
-@foreach (array_chunk($coupon_codes, 6) as $page)
+@foreach (array_chunk($coupon_codes, 12) as $page)
     <div class="page">
         @foreach ($page as $coupon)
             <div class="coupon">
-                <div class="coupon-top">
+                <div class="coupon-content">
                     <div class="label">Kode Kupon</div>
                     <div class="code">{{ $coupon['id'] }}</div>
-                </div>
-                <div class="coupon-bottom">
+                    <div class="divider"></div>
                     <div class="info">Masukkan kode kupon di website resmi kami:</div>
                     <div class="website">www.rajatuna.com</div>
                 </div>
             </div>
         @endforeach
-        @for ($i = count($page); $i < 6; $i++)
+        @for ($i = count($page); $i < 12; $i++)
             <div class="coupon empty"></div>
         @endfor
     </div>

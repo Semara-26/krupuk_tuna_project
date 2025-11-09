@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class CouponConfirmation extends Model
 {
@@ -11,10 +12,10 @@ class CouponConfirmation extends Model
         'coupon_code',
         'full_name',
         'email',
-        'province',
+        'address',
         'district',
         'buy_platform',
-        'product_id',
         'phone'
     ];
+
 }
