@@ -8,39 +8,39 @@ import ActivityPopup from "@/Components/ActivityPopup";
 import { Link } from "@inertiajs/react";
 import Lottie from "lottie-react";
 import fishJumping from "./Fish Jumping.json";
+import { faker } from "@faker-js/faker";
 
-const dummyActivities = [
-    {
-        type: "kupon",
-        user: "Semara D. (Bali)",
-        action: "baru saja menukarkan 3 kupon!",
-    },
-    {
-        type: "menang",
-        user: "Budi S. (Jakarta)",
-        action: "memenangkan Hadiah Hiburan!",
-    },
-    {
-        type: "kupon",
-        user: "Agus W. (Surabaya)",
-        action: "baru saja menukarkan 1 kupon!",
-    },
-    {
-        type: "menang",
-        user: "Ani W. (Bandung)",
-        action: "memenangkan Voucher Belanja!",
-    },
-    {
-        type: "kupon",
-        user: "Cahyo A. (Yogyakarta)",
-        action: "baru saja menukarkan 5 kupon!",
-    },
-];
+// helper: censor name like "s***ra"
+// --- Helper: censor name like "s***ra" ---
+function censorName(name) {
+    if (!name) return name;
+    const plain = name.trim();
+    if (plain.length <= 3)
+        return plain[0] + "*".repeat(Math.max(0, plain.length - 1));
+    const first = plain[0];
+    const lastTwo = plain.slice(-2);
+    const stars = "*".repeat(Math.max(1, plain.length - 3));
+    return `${first}${stars}${lastTwo}`;
+}
 
-// Helper untuk ambil data acak
-const getRandomActivity = () => {
-    return dummyActivities[Math.floor(Math.random() * dummyActivities.length)];
+// --- Only one type of activity now: kupon ---
+const activityActions = {
+    kupon: (count) => `baru saja menukarkan ${count} kupon!`,
 };
+
+// --- Generator for random activity ---
+function getRandomActivity() {
+    const fullName = faker.person.firstName() + " " + faker.person.lastName();
+    const shortName = censorName(faker.person.firstName().toLowerCase());
+
+    const count = faker.number.int({ min: 1, max: 5 });
+    return {
+        type: "kupon",
+        user: shortName,
+        action: activityActions.kupon(count),
+        timestamp: Date.now(),
+    };
+}
 
 export default function AuthenticatedLayout({
     auth,
@@ -77,21 +77,21 @@ export default function AuthenticatedLayout({
         // --- BLOK BARU (PAKAI API) ---
         // const fetchActivity = async () => {
         //     try {
-                // 1. Sembunyikan pop-up lama (jika ada)
+        // 1. Sembunyikan pop-up lama (jika ada)
         //         setCurrentActivity(null);
 
-                // 2. Ambil data baru dari API
+        // 2. Ambil data baru dari API
         //         const res = await axios.get('/api/recent-activity'); // <-- Panggil API backend
-                
-                // 3. (PENTING) Tunggu 1 detik biar animasi 'exit' selesai
+
+        // 3. (PENTING) Tunggu 1 detik biar animasi 'exit' selesai
         //         await new Promise(resolve => setTimeout(resolve, 1000));
 
-                // 4. Tampilkan data baru
-                // Pastikan data backend punya 'timestamp' asli
-        //         setCurrentActivity(res.data); 
+        // 4. Tampilkan data baru
+        // Pastikan data backend punya 'timestamp' asli
+        //         setCurrentActivity(res.data);
 
         //     } catch (err) {
-                // Kalau error, ya jangan tampilkan apa-apa
+        // Kalau error, ya jangan tampilkan apa-apa
         //         console.error("Gagal fetch activity:", err);
         //         setCurrentActivity(null);
         //     }

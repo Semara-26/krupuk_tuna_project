@@ -30,7 +30,7 @@ class CouponConfirmationController extends Controller
 
         if ($validator->fails()) {
             return response()->json([
-                'code' => 400,
+                'status' => False,
                 'message' => 'error',
                 'data' => $validator->errors()
             ], 400);
@@ -43,19 +43,18 @@ class CouponConfirmationController extends Controller
             foreach ($validatedData["coupon_code"] as $cp_code) {
                 $res = $coupon_controller->checkCoupon($cp_code);
                 $status = $res["status"];
-                if ($status) {
-                    $dataToStore = $validatedData;
-                    $dataToStore['coupon_code'] = $cp_code;
-
-                    $store_res = CouponConfirmation::create($dataToStore);
-                    $data[] = [
-                        'status' => $status,
-                        'message' => 'Kupon sudah disimpan',
-                        'data' => [$store_res]
-                    ];
-                } else {
-                    $data[] = $res["data"];
-                }
+                if (!$status) {
+                    return response()->json($res);
+                    break;
+                } 
+                $dataToStore = $validatedData;
+                $dataToStore['coupon_code'] = $cp_code;
+                $store_res = CouponConfirmation::create($dataToStore);
+                $data[] = [
+                    'status' => $status,
+                    'message' => 'Kupon sudah disimpan',
+                    'data' => [$store_res]
+                ];
             }
             return response()->json([
                 'code' => 200,
@@ -71,22 +70,10 @@ class CouponConfirmationController extends Controller
         }
     }
 
-    public function checkCoupon($coupon_code): bool
+    public function checkCoupon($coupon_code)
     {
-        $coupon_exists = Coupon::find($coupon_code);
-        if (!$coupon_exists) {
-            return false;
-        }
-        return true;
-    }
-
-    public function confirmCoupon($coupon_code): bool
-    {
-        $coupon_confirmed = CouponConfirmation::where('coupon_code', $coupon_code)->exists();
-
-        if ($coupon_confirmed) {
-            return false;
-        }
-        return true;
+        $coupon_controller = new CouponController();
+        $res = $coupon_controller->checkCoupon($coupon_code);
+        return response()->json($res);
     }
 }

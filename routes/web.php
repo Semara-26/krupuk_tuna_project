@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\AdminCouponController;
 use App\Http\Controllers\Admin\AdminDashboardController;
 use App\Http\Controllers\Admin\AdminEventController;
 use App\Http\Controllers\Admin\AdminEventPageController;
@@ -31,26 +32,10 @@ Route::controller(CourierController::class)->group(function () {
 
 Route::post('/customer/checkout', [CheckoutController::class, 'create'])->name('order.store.popup');
 
-// Route::post('/coupon/confirm', [CouponConfirmationController::class, 'store']);
+Route::post('/coupon/confirm', [CouponConfirmationController::class, 'store'])->name('coupon.confirm')->middleware('throttle:10,1');
 
-Route::get("/undian1", [WinnerController::class, 'index']);
+Route::get("/undian", [WinnerController::class, 'index'])->name('undian');
 
-Route::get('/undian', function () {
-    $tanggalBerikutnya = "Sabtu, 1 Desember 2025";
-    return Inertia::render('Undian', [
-        'tanggalUndian' => $tanggalBerikutnya,
-        'pemenang' => [
-            ['id' => 1, 'nomor_kupon' => 'KT-845621', 'nama' => 'Budi Santoso', 'hadiah' => 'Sepeda Motor'],
-            ['id' => 2, 'nomor_kupon' => 'KT-778934', 'nama' => 'Ani Wijaya', 'hadiah' => 'Smartphone'],
-            ['id' => 3, 'nomor_kupon' => 'KT-912345', 'nama' => 'Cahyo Aji', 'hadiah' => 'Voucher Belanja'],
-        ],
-        'hadiahBerikutnya' => [
-            ['id' => 1, 'nama' => 'Hadiah Utama', 'detail' => '1x Sepeda Motor Listrik'],
-            ['id' => 2, 'nama' => 'Hadiah Hiburan', 'detail' => '5x Smartphone Keren'],
-            ['id' => 3, 'nama' => 'Hadiah Apresiasi', 'detail' => '10x Voucher Belanja @ Rp 100.000']
-        ]
-    ]);
-})->name('undian');
 
 Route::get('/lacak', function () {
     // Nanti, tim backend akan mencari data ini di database berdasarkan input.
@@ -86,7 +71,7 @@ Route::get('/lacak', function () {
 
 
 //cek kupon
-Route::get('/coupon/check/{coupon}', [CouponController::class, 'checkCoupon']);
+Route::get('/coupon/check/{coupon}', [CouponConfirmationController::class, 'checkCoupon'])->name('check.coupon');
 
 
 
@@ -112,14 +97,16 @@ Route::middleware('auth:admin')->group(function () {
     Route::get('/admin/end-event/{event_id}', [AdminEventController::class, 'endGachaEvent']);
     //hapus event
     Route::get('/admin/delete-event/{event_id}', [AdminEventController::class, 'removeEvent']);
+
+
+
+    Route::get('/admin/generate-coupons/{num}', [AdminCouponController::class, 'couponsGetter']);
 });
 
-Route::get('/admin/generate-coupons/{num}', [CouponController::class, 'couponsGetter']);
-//bagian login masih belum sempurna. biar ngga ada yg bisa bruteforce
 Route::get('/admin/login', [AdminLoginController::class, 'index'])->name('login');
-Route::post('/admin/login', [AdminLoginController::class, 'adminLogin'])->name('admin.login');
+Route::post('/admin/login', [AdminLoginController::class, 'adminLogin'])->name('admin.login')->middleware('throttle:10,1');
 Route::post('/admin/logout', [AdminLoginController::class, 'logout'])->name('admin.logout');
 
 
 
-require __DIR__ . '/auth.php';
+

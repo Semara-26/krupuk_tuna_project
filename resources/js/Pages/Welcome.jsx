@@ -9,7 +9,7 @@ import "swiper/css/pagination";
 // import OrderModal from "@/Components/OrderModal";
 import KuponModal from "@/Components/KuponModal";
 
-export default function Welcome({ auth }) {
+export default function Welcome({ auth, terakhirInput }) {
     const [showKuponModal, setShowKuponModal] = useState(false);
 
     // const [quantity, setQuantity] = useState(1);
@@ -183,7 +183,7 @@ export default function Welcome({ auth }) {
                 onClose={closeModal}
                 quantity={quantity}
             /> */}
-            <KuponModal show={showKuponModal} onClose={closeKuponModal} />
+            <KuponModal show={showKuponModal} onClose={closeKuponModal} terakhirInput={terakhirInput}/>
         </AuthenticatedLayout>
     );
 }

@@ -92,10 +92,10 @@ export default function Undian({
                                         Nomor Kupon
                                     </div>
                                     <div className="text-3xl font-bold text-gray-900 my-1">
-                                        {p.nomor_kupon}
+                                        {p.coupon_code}
                                     </div>
                                     <div className="text-3xl font-semibold text-red-700">
-                                        {p.nama}
+                                        {p.full_name}
                                     </div>
                                 </motion.div>
                             ))
@@ -132,10 +132,10 @@ export default function Undian({
                                         className="p-4 bg-white rounded-lg shadow text-left"
                                     >
                                         <span className="block font-bold text-lg text-red-600">
-                                            {hadiah.nama}
+                                            {hadiah.qty}x{" "}{hadiah.prize_name.replace(/\b\w/g, char => char.toUpperCase())}
                                         </span>
                                         <span className="text-gray-700">
-                                            {hadiah.detail}
+                                            {hadiah.prize_type}
                                         </span>
                                     </li>
                                 ))}

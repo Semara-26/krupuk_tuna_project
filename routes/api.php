@@ -14,7 +14,10 @@ Route::get('/user', function (Request $request) {
 
 Route::post('/coupon/confirm', [CouponConfirmationController::class, 'store']);
 
-Route::get('/coupon/check/{coupon}', [CouponController::class, 'checkCoupon']);
+// Route::get('/coupon/check/{coupon}', [CouponController::class, 'checkCoupon']);
+
+
+Route::get('/coupon/check/{coupon}', [CouponConfirmationController::class, 'checkCoupon'])->name('check.coupon');
 
 Route::get('/admin/coupon/check/{coupon}', [AdminEventController::class, 'checkCoupon']);
 Route::post('/admin/winners/store', [AdminEventController::class, 'storeWinners']);
