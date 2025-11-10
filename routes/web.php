@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\AdminCouponController;
 use App\Http\Controllers\Admin\AdminDashboardController;
+use App\Http\Controllers\Admin\AdminMakeCoupon;
 use App\Http\Controllers\Admin\AdminEventController;
 use App\Http\Controllers\Admin\AdminEventPageController;
 use App\Http\Controllers\Admin\AdminLoginController;
@@ -80,6 +81,7 @@ Route::get('/coupon/check/{coupon}', [CouponConfirmationController::class, 'chec
 Route::middleware('auth:admin')->group(function () {
     //munculin dashboard
     Route::get('/admin/dashboard', [AdminDashboardController::class, 'index']);
+    Route::get('/admin/buat-kupon', [AdminMakeCoupon::class, 'index']);
     //bagian event
     //munculin tampilan menu event, tapi belum jadi.
     Route::get('/admin/event', [AdminEventPageController::class, 'index']);
