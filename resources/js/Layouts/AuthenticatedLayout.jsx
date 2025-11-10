@@ -135,7 +135,7 @@ export default function AuthenticatedLayout({
                                         >
                                             Home
                                         </NavLink>
-                                        <NavLink
+                                        {/* <NavLink
                                             href={route("lacak")}
                                             active={route().current("lacak")}
                                         >
@@ -146,7 +146,7 @@ export default function AuthenticatedLayout({
                                     active={route().current("undian")}
                                 >
                                     Undian
-                                </NavLink> */}
+                                </NavLink> */} 
                                     </>
                                 )}
                             </div>
@@ -256,12 +256,12 @@ export default function AuthenticatedLayout({
                                 >
                                     Home
                                 </ResponsiveNavLink>
-                                <ResponsiveNavLink
+                                {/* <ResponsiveNavLink
                                     href={route("lacak")}
                                     active={route().current("lacak")}
                                 >
                                     Lacak
-                                </ResponsiveNavLink>
+                                </ResponsiveNavLink> */}
                                 {/* <ResponsiveNavLink
                             href={route("undian")}
                             active={route().current("undian")}
