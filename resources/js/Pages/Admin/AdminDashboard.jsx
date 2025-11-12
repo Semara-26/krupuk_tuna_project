@@ -1,157 +1,112 @@
-import React from "react";
+// File: resources/js/Pages/Admin/AdminDashboard.jsx (Versi baru)
 
-export default function AdminPage({
-    expired_coupons,
-    active_coupons,
-    all_coupons,
+import React from "react";
+import AdminLayout from "@/Layouts/AdminLayout"; // <-- 1. Import layout baru
+import { Head, router } from "@inertiajs/react"; // <-- 2. Import router
+import axios from "axios";
+import Swal from "sweetalert2";
+import "sweetalert2/dist/sweetalert2.min.css";
+
+// Terima 'auth' dan props lain dari backend
+export default function AdminDashboard({ 
+    auth, 
+    expired_coupons, 
+    active_coupons, 
+    all_coupons 
 }) {
+    
+    // Pindahkan fungsi 'handleCheckCoupon' ke sini
     const handleCheckCoupon = (event) => {
         event.preventDefault();
-
         const couponCode = event.target.elements.couponCode.value;
 
-        if (couponCode === "AMPHOREUS") {
-            alert('Kitnya CYRENE MID!!!');
-        } else if (couponCode === "KINGYUAN999") {
-            alert('KARAKTER INVESTASI JANGKA PANJANG KEBANGGAAN KING RAMA!!!');
-        } else {
-            alert("Kupon tidak ditemukan. Silakan cek kembali.");
-        }
+        // Kita ganti 'alert' pakai 'axios' beneran
+        // Asumsi route-nya 'admin.coupon.check'
+        axios.get(route('admin.coupon.check', { coupon: couponCode }))
+            .then(res => {
+                // Tampilkan info user (res.data.data[0].full_name)
+                Swal.fire({
+                    title: 'Kupon Ditemukan!',
+                    html: `Kupon <b>${couponCode}</b> adalah milik:<br/><b>${res.data.data[0].full_name}</b>`,
+                    icon: 'success'
+                });
+            })
+            .catch(err => {
+                // Tampilkan error dari backend
+                Swal.fire({
+                    title: 'Error!',
+                    text: err.response.data.message || 'Kupon tidak ditemukan.',
+                    icon: 'error'
+                });
+            });
 
         event.target.reset();
     };
 
     return (
-        <div
-            className="grid h-screen grid-cols-[240px_1fr] grid-rows-[60px_1fr]"
-            style={{
-                gridTemplateAreas: `
-          "header header"
-          "sidebar content"
-        `,
-            }}
-        >
-            <header
-                className="flex items-center border-b border-gray-500 bg-white px-6 shadow-sm z-10"
-                style={{ gridArea: "header" }}
-            >
-                <h1 className="m-0 text-xl font-semibold text-gray-800">
-                    Dashboard Admin
-                </h1>
-            </header>
+        // 3. Bungkus semua konten dengan <AdminLayout>
+        <AdminLayout user={auth.user}>
+            <Head title="Admin Dashboard" />
 
-            <aside
-                className="overflow-y-auto bg-gray-800 p-5 text-gray-100"
-                style={{ gridArea: "sidebar" }}
-            >
-                <h2 className="mt-0 border-b border-gray-700 pb-2 text-lg font-bold text-white">
-                    Navigation Panel
-                </h2>
-                <ul className="m-0 mt-5 list-none p-0">
-                    <li>
-                        <a
-                            href="dasboard"
-                            className="mb-1 block rounded-md bg-blue-500 p-3 font-bold text-white no-underline"
-                        >
-                            Dashboard
-                        </a>
-                    </li>
-                    <li>
-                        <a
-                            href="buat-kupon"
-                            className="mb-1 block rounded-md p-3 text-gray-200 no-underline transition-colors duration-150 hover:bg-blue-700"
-                        >
-                            Buat Kupon
-                        </a>
-                    </li>
-                    <li>
-                        <a
-                            href="#"
-                            className="mb-1 block rounded-md p-3 text-gray-200 no-underline transition-colors duration-150 hover:bg-blue-700"
-                        >
-                            Undi Pemenang
-                        </a>
-                    </li>
-                    <li>
-                        <a
-                            href="#"
-                            className="mb-1 block rounded-md p-3 text-gray-200 no-underline transition-colors duration-150 hover:bg-blue-700"
-                        >
-                            Menu Super Admin
-                        </a>
-                    </li>
-                    <li>
-                        <a
-                            href="#"
-                            className="mb-1 block rounded-md p-3 text-gray-200 no-underline transition-colors duration-150 hover:bg-blue-700"
-                        >
-                            Log out
-                        </a>
-                    </li>
-                </ul>
-            </aside>
+            {/* Ini adalah <main> yang lama, sekarang jadi 'children' */}
+            <h2 className="mt-0 text-2xl font-semibold text-gray-800">
+                Admin Datang!!!
+            </h2>
+            <p className="text-gray-600">Ringkasan Kupon</p>
 
-            <main
-                className="overflow-y-auto bg-gray-100 p-8"
-                style={{ gridArea: "content" }}
-            >
-                <h2 className="mt-0 text-2xl font-semibold text-gray-800">
-                    Admin Datang!!!
-                </h2>
-                <p className="text-gray-600">Ringkasan Kupon</p>
-
-                <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-3">
-                    <div className="rounded-lg bg-white p-6 shadow-md transition-shadow hover:shadow-lg">
-                        <h3 className="text-sm font-medium uppercase tracking-wider text-gray-500">
-                            Jumlah Kupon yang Sudah Digunakan
-                        </h3>
-                        <span className="mt-2 block text-3xl font-bold text-gray-900">
-                            {expired_coupons}
-                        </span>
-                    </div>
-
-                    <div className="rounded-lg bg-white p-6 shadow-md transition-shadow hover:shadow-lg">
-                        <h3 className="text-sm font-medium uppercase tracking-wider text-gray-500">
-                            Jumlah Kupon yang Belum Digunakan
-                        </h3>
-                        <span className="mt-2 block text-3xl font-bold text-gray-900">
-                            {active_coupons}
-                        </span>
-                    </div>
-
-                    <div className="rounded-lg bg-white p-6 shadow-md transition-shadow hover:shadow-lg">
-                        <h3 className="text-sm font-medium uppercase tracking-wider text-gray-500">
-                            Jumlah Kupon yang Akan di Undi
-                        </h3>
-                        <span className="mt-2 block text-3xl font-bold text-gray-900">
-                            {all_coupons}
-                        </span>
-                    </div>
-                </div>
-
-                <div className="mt-8 rounded-lg bg-white p-6 shadow-md">
-                    <h3 className="mt-0 text-xl font-semibold text-gray-800">
-                        Cek Status Kupon
+            {/* ... (Konten 3 card) ... */}
+            <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-3">
+                <div className="rounded-lg bg-white p-6 shadow-md transition-shadow hover:shadow-lg">
+                    <h3 className="text-sm font-medium uppercase tracking-wider text-gray-500">
+                        Jumlah Kupon yang Sudah Digunakan
                     </h3>
-                    <p className="mb-4 text-gray-600">
-                        Masukkan kode kupon untuk melihat statusnya.
-                    </p>
-                    <form className="flex" onSubmit={handleCheckCoupon}>
-                        <input
-                            type="text"
-                            name="couponCode"
-                            placeholder="Masukkan kode kupon..."
-                            className="flex-grow rounded-l-md border border-gray-300 px-4 py-2 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-emerald-500"
-                        />
-                        <button
-                            type="submit"
-                            className="rounded-r-md bg-emerald-600 px-5 py-2 font-medium text-white hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"
-                        >
-                            Cek Kupon
-                        </button>
-                    </form>
+                    <span className="mt-2 block text-3xl font-bold text-gray-900">
+                        {expired_coupons}
+                    </span>
                 </div>
-            </main>
-        </div>
+
+                <div className="rounded-lg bg-white p-6 shadow-md transition-shadow hover:shadow-lg">
+                    <h3 className="text-sm font-medium uppercase tracking-wider text-gray-500">
+                        Jumlah Kupon yang Belum Digunakan
+                    </h3>
+                    <span className="mt-2 block text-3xl font-bold text-gray-900">
+                        {active_coupons}
+                    </span>
+                </div>
+
+                <div className="rounded-lg bg-white p-6 shadow-md transition-shadow hover:shadow-lg">
+                    <h3 className="text-sm font-medium uppercase tracking-wider text-gray-500">
+                        Jumlah Kupon yang Akan di Undi
+                    </h3>
+                    <span className="mt-2 block text-3xl font-bold text-gray-900">
+                        {all_coupons}
+                    </span>
+                </div>
+            </div>
+
+            {/* ... (Form Cek Status Kupon) ... */}
+            <div className="mt-8 rounded-lg bg-white p-6 shadow-md">
+                <h3 className="mt-0 text-xl font-semibold text-gray-800">
+                    Cek Status Kupon
+                </h3>
+                <p className="mb-4 text-gray-600">
+                    Masukkan kode kupon untuk melihat statusnya.
+                </p>
+                <form className="flex" onSubmit={handleCheckCoupon}>
+                    <input
+                        type="text"
+                        name="couponCode"
+                        placeholder="Masukkan kode kupon..."
+                        className="flex-grow rounded-l-md border border-gray-300 px-4 py-2 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-emerald-500"
+                    />
+                    <button
+                        type="submit"
+                        className="rounded-r-md bg-emerald-600 px-5 py-2 font-medium text-white hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"
+                    >
+                        Cek Kupon
+                    </button>
+                </form>
+            </div>
+        </AdminLayout>
     );
 }

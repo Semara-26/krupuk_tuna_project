@@ -47,7 +47,7 @@
     </head>
     <body class="font-sans antialiased">
         <div id="splash-screen">
-        <img src="images/logo1.png" alt="Logo Krupuk Tuna" />
+        <img src="/images/logo1.png" alt="Logo Krupuk Tuna" />
     </div>
         @inertia
     </body>

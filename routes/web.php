@@ -80,29 +80,35 @@ Route::get('/coupon/check/{coupon}', [CouponConfirmationController::class, 'chec
 //disini harus login dulu
 Route::middleware('auth:admin')->group(function () {
     //munculin dashboard
-    Route::get('/admin/dashboard', [AdminDashboardController::class, 'index']);
-    Route::get('/admin/buat-kupon', [AdminMakeCoupon::class, 'index']);
+    Route::get('/admin/dashboard', [AdminDashboardController::class, 'index'])->name('admin.dashboard'); 
+
+    Route::get('/admin/buat-kupon', [AdminMakeCoupon::class, 'index'])->name('admin.buat-kupon'); 
+    
     //bagian event
-    //munculin tampilan menu event, tapi belum jadi.
-    Route::get('/admin/event', [AdminEventPageController::class, 'index']);
-    //buat cek kupon, bagian admin milih siapa pemenangnya. return id dan full name customer yang redeem
-    Route::get('/admin/coupon/check/{coupon}', [AdminEventController::class, 'checkCoupon']);
+    Route::get('/admin/event', [AdminEventPageController::class, 'index'])->name('admin.event'); 
+    
+    //buat cek kupon
+    Route::get('/admin/coupon/check/{coupon}', [AdminEventController::class, 'checkCoupon'])->name('admin.coupon.check'); 
+    
     //nyimpen semua pemenang 
-    Route::post('/admin/winners/store', [AdminEventController::class, 'storeWinners']);
-    //random gacha, perlu event id sama total pemenang
-    Route::get('/admin/draw/{event_id}/{num}', [AdminEventController::class, 'randomGacha']);
+    Route::post('/admin/winners/store', [AdminEventController::class, 'storeWinners'])->name('admin.winners.store'); 
+    
+    //random gacha
+    Route::get('/admin/draw/{event_id}/{num}', [AdminEventController::class, 'randomGacha'])->name('admin.draw'); 
+    
     //buat event baru
-    Route::post('/admin/create-event', [AdminEventController::class, 'createGachaEvent']);
-    //edit event yang udah dibuat
-    Route::post('/admin/update-event', [AdminEventController::class, 'updateGachaEvent']);
+    Route::post('/admin/create-event', [AdminEventController::class, 'createGachaEvent'])->name('admin.create-event'); 
+    
+    //edit event 
+    Route::post('/admin/update-event', [AdminEventController::class, 'updateGachaEvent'])->name('admin.update-event'); 
+    
     //selesaiin event
-    Route::get('/admin/end-event/{event_id}', [AdminEventController::class, 'endGachaEvent']);
+    Route::get('/admin/end-event/{event_id}', [AdminEventController::class, 'endGachaEvent'])->name('admin.end-event'); 
+    
     //hapus event
-    Route::get('/admin/delete-event/{event_id}', [AdminEventController::class, 'removeEvent']);
+    Route::get('/admin/delete-event/{event_id}', [AdminEventController::class, 'removeEvent'])->name('admin.delete-event'); 
 
-
-
-    Route::get('/admin/generate-coupons/{num}', [AdminCouponController::class, 'couponsGetter']);
+    Route::get('/admin/generate-coupons/{num}', [AdminCouponController::class, 'couponsGetter'])->name('admin.generate-coupons'); 
 });
 
 Route::get('/admin/login', [AdminLoginController::class, 'index'])->name('login');
