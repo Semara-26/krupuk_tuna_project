@@ -10,8 +10,7 @@ import Lottie from "lottie-react";
 import fishJumping from "./Fish Jumping.json";
 import { faker } from "@faker-js/faker";
 
-// helper: censor name like "s***ra"
-// --- Helper: censor name like "s***ra" ---
+
 function censorName(name) {
     if (!name) return name;
     const plain = name.trim();
@@ -23,7 +22,7 @@ function censorName(name) {
     return `${first}${stars}${lastTwo}`;
 }
 
-// --- Only one type of activity now: kupon ---
+
 const activityActions = {
     kupon: (count) => `baru saja menukarkan ${count} kupon!`,
 };
