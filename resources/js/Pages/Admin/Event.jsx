@@ -1,17 +1,16 @@
-import React, { useState } from 'react';
-import AdminLayout from '@/Layouts/AdminLayout'; 
-import { Head } from '@inertiajs/react';
-import ModalEvent from '@/Components/Admin/ModalEvent'; // (Akan kita buat)
-import PanelUndi from '@/Components/Admin/PanelUndi'; // (Akan kita buat)
-import EventAktifCard from '@/Components/Admin/EventAktifCard'; // (Akan kita buat)
-import PrimaryButton from '@/Components/PrimaryButton';
-import Swal from 'sweetalert2';
-import 'sweetalert2/dist/sweetalert2.min.css';
-import axios from 'axios';
+import React, { useState } from "react";
+import AdminLayout from "@/Layouts/AdminLayout";
+import { Head } from "@inertiajs/react";
+import ModalEvent from "@/Components/Admin/ModalEvent"; // (Akan kita buat)
+import PanelUndi from "@/Components/Admin/PanelUndi"; // (Akan kita buat)
+import EventAktifCard from "@/Components/Admin/EventAktifCard"; // (Akan kita buat)
+import PrimaryButton from "@/Components/PrimaryButton";
+import Swal from "sweetalert2";
+import "sweetalert2/dist/sweetalert2.min.css";
+import axios from "axios";
 
 // Halaman ini akan menerima props dari 'AdminEventPageController'
-export default function Event({ auth, activeEvent = null }) { 
-    
+export default function Event({ auth, activeEvent = null }) {
     // State untuk mengontrol modal (Buat/Edit)
     const [isModalOpen, setIsModalOpen] = useState(false);
     // State untuk menyimpan data event yg mau di-edit
@@ -22,9 +21,9 @@ export default function Event({ auth, activeEvent = null }) {
         if (activeEvent) {
             // Sesuai Req #2: Error jika ada event aktif
             Swal.fire({
-                icon: 'error',
-                title: 'Oops...',
-                text: 'Masih ada event yang sedang aktif! Selesaikan dulu event tersebut.',
+                icon: "error",
+                title: "Oops...",
+                text: "Masih ada event yang sedang aktif! Selesaikan dulu event tersebut.",
             });
         } else {
             setEditingEvent(null); // Pastikan mode-nya 'buat baru'
@@ -41,22 +40,31 @@ export default function Event({ auth, activeEvent = null }) {
     // Fungsi untuk Hapus Event
     const handleHapusEvent = () => {
         Swal.fire({
-            title: 'Yakin ingin menghapus event?',
+            title: "Yakin ingin menghapus event?",
             text: `"${activeEvent.title}" akan dihapus permanen.`,
-            icon: 'warning',
+            icon: "warning",
             showCancelButton: true,
-            confirmButtonColor: '#d33',
-            cancelButtonText: 'Batal',
-            confirmButtonText: 'Ya, hapus!'
+            confirmButtonColor: "#d33",
+            cancelButtonText: "Batal",
+            confirmButtonText: "Ya, hapus!",
         }).then((result) => {
             if (result.isConfirmed) {
-                axios.get(route('admin.delete-event', { event_id: activeEvent.id }))
-                    .then(res => {
-                        Swal.fire('Terhapus!', 'Event telah dihapus.', 'success');
+                axios
+                    .get(
+                        route("admin.delete-event", {
+                            event_id: activeEvent.id,
+                        })
+                    )
+                    .then((res) => {
+                        Swal.fire(
+                            "Terhapus!",
+                            "Event telah dihapus.",
+                            "success"
+                        );
                         window.location.reload(); // Refresh halaman
                     })
-                    .catch(err => {
-                        Swal.fire('Error', 'Gagal menghapus event.', 'error');
+                    .catch((err) => {
+                        Swal.fire("Error", "Gagal menghapus event.", "error");
                     });
             }
         });
@@ -64,35 +72,53 @@ export default function Event({ auth, activeEvent = null }) {
 
     // Fungsi untuk Selesai Event
     const handleSelesaiEvent = () => {
-         Swal.fire({
-            title: 'Selesaikan Event Ini?',
+        Swal.fire({
+            title: "Selesaikan Event Ini?",
             text: 'Status event akan diubah menjadi "Selesai" dan kupon pemenang akan ditandai.',
-            icon: 'info',
+            icon: "info",
             showCancelButton: true,
-            confirmButtonText: 'Ya, Selesaikan'
+            confirmButtonText: "Ya, Selesaikan",
         }).then((result) => {
             if (result.isConfirmed) {
-                axios.get(route('admin.end-event', { event_id: activeEvent.id }))
-                    .then(res => {
-                        Swal.fire('Selesai!', 'Event telah ditandai selesai.', 'success');
-                        window.location.reload(); // Refresh halaman
+                axios
+                    .get(route("admin.end-event", { event_id: activeEvent.id }))
+                    .then((res) => {
+                        Swal.fire(
+                            "Selesai!",
+                            "Event telah ditandai selesai.",
+                            "success"
+                        ).then(() => {
+                            // Reload halaman setelah klik OK
+                            window.location.reload();
+                        });
                     })
-                    .catch(err => {
-                        Swal.fire('Error', 'Gagal menyelesaikan event. Cek log.', 'error');
+                    .catch((err) => {
+                        let errorMsg = "Gagal menyelesaikan event.";
+                        if (
+                            err.response &&
+                            err.response.data &&
+                            err.response.data.message
+                        ) {
+                            errorMsg = err.response.data.message;
+                        }
+
+                        Swal.fire({
+                            icon: "error",
+                            title: "Oops... Error",
+                            text: errorMsg,
+                        });
                     });
             }
         });
     };
 
-
     return (
         // Asumsi kamu pakai layout admin, ganti jika perlu
-        <AdminLayout user={auth.admin}> 
+        <AdminLayout user={auth.admin}>
             <Head title="Undi Pemenang" />
 
             <div className="py-12">
                 <div className="max-w-7xl mx-auto sm:px-6 lg:px-8">
-                    
                     <div className="flex justify-between items-center mb-6">
                         <h1 className="text-2xl font-bold text-gray-800">
                             Manajemen Event Undian
@@ -103,13 +129,14 @@ export default function Event({ auth, activeEvent = null }) {
                     </div>
 
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                        
                         {/* Kolom Kiri: Panel Gacha */}
                         <div className="lg:col-span-2">
                             {activeEvent ? (
-                                <PanelUndi 
-                                    activeEvent={activeEvent} 
-                                    totalWinnersNeeded={activeEvent.total_winners} 
+                                <PanelUndi
+                                    activeEvent={activeEvent}
+                                    totalWinnersNeeded={
+                                        activeEvent.total_winners
+                                    }
                                 />
                             ) : (
                                 <div className="p-6 bg-white shadow-lg rounded-lg text-center">
@@ -117,7 +144,8 @@ export default function Event({ auth, activeEvent = null }) {
                                         Tidak Ada Event Aktif
                                     </h3>
                                     <p className="mt-2 text-gray-500">
-                                        Silakan "Buat Event Baru" untuk memulai undian.
+                                        Silakan "Buat Event Baru" untuk memulai
+                                        undian.
                                     </p>
                                 </div>
                             )}
@@ -126,7 +154,7 @@ export default function Event({ auth, activeEvent = null }) {
                         {/* Kolom Kanan: Info Event Aktif */}
                         <div className="lg:col-span-1">
                             {activeEvent ? (
-                                <EventAktifCard 
+                                <EventAktifCard
                                     event={activeEvent}
                                     onEdit={handleEditEvent}
                                     onDelete={handleHapusEvent}
@@ -134,7 +162,9 @@ export default function Event({ auth, activeEvent = null }) {
                                 />
                             ) : (
                                 <div className="p-6 bg-white shadow-lg rounded-lg text-center opacity-50">
-                                    <h3 className="text-lg font-medium text-gray-700">Event Aktif</h3>
+                                    <h3 className="text-lg font-medium text-gray-700">
+                                        Event Aktif
+                                    </h3>
                                     <p className="mt-2 text-gray-500">
                                         Belum ada event yang berjalan.
                                     </p>
@@ -146,7 +176,7 @@ export default function Event({ auth, activeEvent = null }) {
             </div>
 
             {/* Modal untuk Buat / Edit Event */}
-            <ModalEvent 
+            <ModalEvent
                 show={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
                 eventData={editingEvent} // Kirim data event jika mode 'edit'

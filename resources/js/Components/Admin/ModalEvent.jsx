@@ -47,26 +47,56 @@ export default function ModalEvent({ show, onClose, eventData }) {
     // State untuk total pemenang (otomatis kalkulasi)
     const [totalWinners, setTotalWinners] = useState(1);
 
+    // --- FUNGSI HELPER BARU UNTUK FORMAT TANGGAL ---
+    const formatDateForInput = (dateStr) => {
+        if (!dateStr) return "";
+        // Ubah 'YYYY-MM-DD HH:MM:SS' jadi 'YYYY-MM-DDTHH:MM'
+        return dateStr.substring(0, 10) + "T" + dateStr.substring(11, 16);
+    };
+
+    // --- FUNGSI HELPER BARU UNTUK FORMAT HADIAH ---
+    const formatPrizeForState = (prize) => {
+        return {
+            ...prize,
+            // Ganti nama key 'prize_types_id' jadi 'prize_type'
+            prize_type: prize.prize_types_id,
+        };
+    };
+
     // Efek untuk ngisi form saat mode 'edit'
     useEffect(() => {
-        if (isEditMode && eventData.prizes) {
-            // Pisahkan hadiah utama dan hiburan dari data yg ada
+        // 'data' di-update oleh 'useEffect' bawaan 'useForm' saat 'eventData' berubah
+        // Kita perlu update 'useForm' 'reset()' call
+        if (isEditMode && eventData) {
+            // 1. FORMAT TANGGAL
+            setData({
+                id: eventData.id,
+                title: eventData.title,
+                start_date: formatDateForInput(eventData.start_date),
+                last_buy_date: formatDateForInput(eventData.last_buy_date),
+            });
+
+            // 2. FORMAT HADIAH
             const utama = eventData.prizes.find((p) => p.prize_types_id === 1);
             const hiburan = eventData.prizes.filter(
                 (p) => p.prize_types_id === 2
             );
 
-            if (utama) setHadiahUtama(utama);
-            if (hiburan.length > 0) setHadiahHiburan(hiburan);
-            else setHadiahHiburan([{ prize_name: "", qty: 1, prize_type: 2 }]); // Default
+            if (utama) {
+                setHadiahUtama(formatPrizeForState(utama));
+            }
+            if (hiburan.length > 0) {
+                setHadiahHiburan(hiburan.map(formatPrizeForState));
+            } else {
+                setHadiahHiburan([{ prize_name: "", qty: 1, prize_type: 2 }]);
+            }
         } else {
             // Reset form jika mode 'create'
             reset();
             setHadiahUtama({ prize_name: "", qty: 1, prize_type: 1 });
             setHadiahHiburan([{ prize_name: "", qty: 1, prize_type: 2 }]);
         }
-    }, [eventData, show]);
-
+    }, [isEditMode, eventData, show]); // Tambahkan dependency
     // Efek untuk kalkulasi total pemenang
     useEffect(() => {
         // Jumlahkan 'qty' dari hadiah utama + semua hadiah hiburan
@@ -129,39 +159,50 @@ export default function ModalEvent({ show, onClose, eventData }) {
                 window.location.reload(); // Auto-refresh halaman event
             })
             .catch((err) => {
-                console.error("Kesalahan Submit Event:", err.response); // <-- TAMBAH LOG INI
+                console.error("Kesalahan Submit Event:", err.response); // Tetap log
 
                 let errorTitle = "Oops... Terjadi Kesalahan";
-                let errorMsg = "Terjadi kesalahan server. Cek konsol.";
+                let errorMsg = "Terjadi kesalahan server. Cek konsol."; // Default
 
-                if (err.response && err.response.status === 400) {
-                    // Cek error 'Event Aktif'
-                    if (
-                        err.response.data.message ===
-                        "Ada event yang belum selesai"
-                    ) {
-                        errorTitle = "Event Masih Aktif";
-                        errorMsg =
-                            "Masih ada event yang sedang aktif! Selesaikan dulu event tersebut sebelum membuat yang baru.";
+                // Pastikan ada respons data
+                if (err.response && err.response.data) {
+                    const resData = err.response.data;
+                    
+                    // --- LOGIC BARU ---
+                    let errorsObj = null;
 
-                        // Cek error validasi
-                    } else if (
-                        err.response.data.data &&
-                        Array.isArray(err.response.data.data)
-                    ) {
+                    // 1. Prioritas: Cek 'data' untuk error validasi
+                    if (resData.data) {
+                        // Cek format 'create' -> data: [Object]
+                        if (Array.isArray(resData.data) && resData.data[0]) {
+                            errorsObj = resData.data[0];
+                        
+                        // Cek format 'update' -> data: Object
+                        } else if (typeof resData.data === 'object' && !Array.isArray(resData.data)) {
+                            errorsObj = resData.data;
+                        }
+                    }
+
+                    // 2. Tampilkan Error Validasi JIKA ADA
+                    if (errorsObj) {
                         errorTitle = "Data Tidak Valid";
-                        const errors = err.response.data.data[0]; // Ambil object errors
-                        const errorList = Object.values(errors)
-                            .map((msg) => `<li>${msg[0]}</li>`)
+                        const errorList = Object.values(errorsObj)
+                            .map((msg) => `<li>${msg[0]}</li>`) // msg[0] karena Laravel ngirim array message
                             .join("");
                         errorMsg = `<ul style="text-align: left; padding-left: 1.5rem;">${errorList}</ul>`;
+                    
+                    // 3. Fallback: Jika 'data' kosong, cek 'message' (sesuai chat baru)
+                    } else if (resData.message) {
+                        errorTitle = "Terjadi Kesalahan";
+                        errorMsg = resData.message; // Cth: "Event tidak ditemukan"
                     }
+                    // --- AKHIR LOGIC BARU ---
                 }
 
                 Swal.fire({
                     icon: "error",
                     title: errorTitle,
-                    html: errorMsg, // Tampilkan pesan error yang lebih spesifik
+                    html: errorMsg,
                     confirmButtonColor: "#3085d6",
                 });
             });
