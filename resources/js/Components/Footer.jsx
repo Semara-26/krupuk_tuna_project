@@ -17,9 +17,9 @@ export default function Footer() {
                         <Link href={route('home')} className="text-sm text-gray-300 hover:text-white">
                             Home
                         </Link>
-                        <Link href={route('lacak')} className="text-sm text-gray-300 hover:text-white">
+                        {/* <Link href={route('lacak')} className="text-sm text-gray-300 hover:text-white">
                             Lacak
-                        </Link>
+                        </Link> */}
                         {/* <Link href={route('undian')} className="text-sm text-gray-300 hover:text-white">
                             Undian
                         </Link> */}
