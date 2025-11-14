@@ -12,7 +12,8 @@ export default function AdminDashboard({
     auth, 
     expired_coupons, 
     active_coupons, 
-    all_coupons 
+    all_coupons,
+    admin 
 }) {
     
     // Pindahkan fungsi 'handleCheckCoupon' ke sini
@@ -45,7 +46,7 @@ export default function AdminDashboard({
 
     return (
         // 3. Bungkus semua konten dengan <AdminLayout>
-        <AdminLayout user={auth.user}>
+        <AdminLayout admin={admin} user={auth.user}>
             <Head title="Admin Dashboard" />
 
             {/* Ini adalah <main> yang lama, sekarang jadi 'children' */}

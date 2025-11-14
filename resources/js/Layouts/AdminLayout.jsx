@@ -1,8 +1,10 @@
 import React from "react";
-import { Link, useForm } from "@inertiajs/react";
+import { Link, useForm, usePage  } from "@inertiajs/react";
 
-export default function AdminLayout({ user, children }) {
+export default function AdminLayout({ children }) {
     const { post } = useForm();
+    const { props } = usePage();
+    const admin = props.admin; // now this works!
 
     // Fungsi untuk Log out
     // const handleLogout = (e) => {
@@ -30,7 +32,7 @@ export default function AdminLayout({ user, children }) {
                 </h1>
                 <div className="text-sm text-gray-700">
                     Selamat datang,{" "}
-                    <span className="font-bold">{user?.name ?? 'Admin'}</span>!
+                    <span className="font-bold">{admin ?? "Admin"}</span>!
                 </div>
             </header>
 
@@ -70,7 +72,12 @@ export default function AdminLayout({ user, children }) {
                     <li>
                         <Link
                             href={route("admin.event")} // Asumsi nama route
-                            onClick={() => console.log('Mencoba navigasi ke:', route('admin.event'))}
+                            onClick={() =>
+                                console.log(
+                                    "Mencoba navigasi ke:",
+                                    route("admin.event")
+                                )
+                            }
                             className={`mb-1 block rounded-md p-3 font-bold no-underline transition-colors duration-150 ${
                                 route().current("admin.event")
                                     ? "bg-blue-500 text-white"

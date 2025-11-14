@@ -10,7 +10,7 @@ import "sweetalert2/dist/sweetalert2.min.css";
 import axios from "axios";
 
 // Halaman ini akan menerima props dari 'AdminEventPageController'
-export default function Event({ auth, activeEvent = null }) {
+export default function Event({ admin, activeEvent = null, prizeTypes, undianTitle, sisaPemenang }) {
     // State untuk mengontrol modal (Buat/Edit)
     const [isModalOpen, setIsModalOpen] = useState(false);
     // State untuk menyimpan data event yg mau di-edit
@@ -79,42 +79,46 @@ export default function Event({ auth, activeEvent = null }) {
             showCancelButton: true,
             confirmButtonText: "Ya, Selesaikan",
         }).then((result) => {
-            if (result.isConfirmed) {
-                axios
-                    .get(route("admin.end-event", { event_id: activeEvent.id }))
-                    .then((res) => {
-                        Swal.fire(
-                            "Selesai!",
-                            "Event telah ditandai selesai.",
-                            "success"
-                        ).then(() => {
-                            // Reload halaman setelah klik OK
-                            window.location.reload();
-                        });
-                    })
-                    .catch((err) => {
-                        let errorMsg = "Gagal menyelesaikan event.";
-                        if (
-                            err.response &&
-                            err.response.data &&
-                            err.response.data.message
-                        ) {
-                            errorMsg = err.response.data.message;
-                        }
+            if (!result.isConfirmed) return;
 
-                        Swal.fire({
+            axios
+                .get(route("admin.end-event", { event_id: activeEvent.id }))
+                .then((res) => {
+                    const { code, message, data } = res.data;
+                    console.log(res.data)
+
+                    if (code !== 200) {
+                        return Swal.fire({
                             icon: "error",
-                            title: "Oops... Error",
-                            text: errorMsg,
+                            title: "Gagal",
+                            text: message ?? "Terjadi kesalahan.",
                         });
+                    }
+
+                    // SUCCESS – backend said OK
+                    Swal.fire({
+                        icon: "success",
+                        title: "Selesai!",
+                        text: "Event telah ditandai selesai.",
+                    }).then(() => {
+                        window.location.reload();
                     });
-            }
+                })
+                .catch((err) => {
+                    Swal.fire({
+                        icon: "error",
+                        title: "Oops... Error",
+                        text:
+                            err?.response?.data?.message ??
+                            "Gagal menyelesaikan event.",
+                    });
+                });
         });
     };
 
     return (
         // Asumsi kamu pakai layout admin, ganti jika perlu
-        <AdminLayout user={auth.admin}>
+        <AdminLayout user={admin}>
             <Head title="Undi Pemenang" />
 
             <div className="py-12">
@@ -137,6 +141,7 @@ export default function Event({ auth, activeEvent = null }) {
                                     totalWinnersNeeded={
                                         activeEvent.total_winners
                                     }
+                                    sisaPemenang={sisaPemenang}
                                 />
                             ) : (
                                 <div className="p-6 bg-white shadow-lg rounded-lg text-center">
@@ -180,6 +185,8 @@ export default function Event({ auth, activeEvent = null }) {
                 show={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
                 eventData={editingEvent} // Kirim data event jika mode 'edit'
+                prizeTypes={prizeTypes}
+                undianTitle={undianTitle}
             />
         </AdminLayout>
     );

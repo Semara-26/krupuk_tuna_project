@@ -15,6 +15,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
+use Symfony\Contracts\EventDispatcher\Event;
 
 class AdminEventController extends Controller
 {
@@ -22,7 +23,6 @@ class AdminEventController extends Controller
     public function randomGacha($event_id, $num)
     {
         try {
-            //suruh semara atau pasek buat default dari event_idnya 0.
             $event_data = Events::find($event_id);
             if ($event_data === null || $event_data->status) {
                 return response()->json([
@@ -42,6 +42,14 @@ class AdminEventController extends Controller
             $coupon_code_array = $confirmation_id->pluck("coupon_code")->toArray();
             Cache::put("coupon_data", $coupon_code_array);
 
+            if ($num > count($confirmation_array)) {
+                return response()->json([
+                    'code' => 400,
+                    'message' => 'Jumlah kupon tidak cukup untuk mengundi',
+                    'data' => []
+                ], 400);
+            }
+            
             if ($num > 1) {
                 $winner_keys = array_rand($confirmation_array, $num);
             } else {
@@ -65,7 +73,7 @@ class AdminEventController extends Controller
                 'code' => 500,
                 'message' => 'error',
                 'data' => $th->getMessage()
-            ]);
+            ], 500);
         }
     }
 
@@ -239,13 +247,21 @@ class AdminEventController extends Controller
             }
 
             $sent_total_winners = count($validatedData["winners"]);
-            if ($sent_total_winners !== $event_res->total_winners) {
+            $res_winner = Winner::where('events_id', $validatedData["events_id"])->count();
+            if ($sent_total_winners > $event_res->total_winners) {
                 return response()->json([
                     "code" => 400,
                     "message" => "Total pemenang yang diset ($event_res->total_winners) tidak sesuai dengan yang dikirim ($sent_total_winners)",
                     "data" => []
-                ]);
+                ], 400);
+            } else if ($res_winner == $event_res->total_winners) {
+                return response()->json([
+                    "code" => 400,
+                    "message" => "Total pemenang sudah mencukupi",
+                    "data" => []
+                ], 400);
             }
+
             $to_store_winners_data = [];
             $coupon_controller = new CouponController();
             foreach ($validatedData["winners"] as $winner) {
@@ -298,6 +314,7 @@ class AdminEventController extends Controller
                 ]);
             }
             $res = $event_data->delete();
+            Cache::forget("coupon_data");
             return response()->json([
                 "code" => 200,
                 "message" => "success",
@@ -327,11 +344,15 @@ class AdminEventController extends Controller
             if (!$coupon_data_cache) {
                 return response()->json([
                     "code" => 403,
-                    "message" => "Data kupon tidak ditemukan",
+                    "message" => "Data pemenang tidak ditemukan",
                     "data" => []
                 ]);
             }
-            Coupon::whereIn("id", $coupon_data_cache)->update(["status" => '1']);
+            Coupon::whereIn("id", $coupon_data_cache)->chunkById(500, function ($coupons) {
+                foreach ($coupons as $coupon) {
+                    $coupon->update(["status" => '1']);
+                }
+            });
             $res = Events::find($event_id)->update(["status" => '1']);
             Cache::forget("coupon_data");
             return response()->json([
@@ -355,6 +376,14 @@ class AdminEventController extends Controller
             return response()->json([
                 'code' => 400,
                 'message' => 'Pemilik kupon tidak ditemukan',
+                'data' => [$cp_code]
+            ]);
+        }
+        $res_winner = Winner::where("coupon_code", $cp_code)->exists();
+        if ($res_winner) {
+            return response()->json([
+                'code' => 400,
+                'message' => 'Pemilik kupon sudah menjadi pemenang',
                 'data' => [$cp_code]
             ]);
         }
