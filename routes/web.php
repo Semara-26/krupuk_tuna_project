@@ -113,7 +113,7 @@ Route::middleware('auth:admin')->group(function () {
 
 Route::get('/admin/login', [AdminLoginController::class, 'index'])->name('login');
 Route::post('/admin/login', [AdminLoginController::class, 'adminLogin'])->name('admin.login')->middleware('throttle:10,1');
-Route::post('/admin/logout', [AdminLoginController::class, 'logout'])->name('admin.logout');
+Route::post('/admin/logout', [AdminLoginController::class, 'adminLogout'])->name('admin.logout');
 
 
 
