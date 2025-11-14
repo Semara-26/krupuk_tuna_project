@@ -2,7 +2,8 @@
 
 use App\Http\Controllers\Admin\AdminCouponController;
 use App\Http\Controllers\Admin\AdminDashboardController;
-use App\Http\Controllers\Admin\AdminMakeCoupon;
+use App\Http\Controllers\Admin\SuperAdminMenu;
+use App\Http\Controllers\Admin\AdminManageCoupon;
 use App\Http\Controllers\Admin\AdminEventController;
 use App\Http\Controllers\Admin\AdminEventPageController;
 use App\Http\Controllers\Admin\AdminLoginController;
@@ -81,8 +82,9 @@ Route::get('/coupon/check/{coupon}', [CouponConfirmationController::class, 'chec
 Route::middleware('auth:admin')->group(function () {
     //munculin dashboard
     Route::get('/admin/dashboard', [AdminDashboardController::class, 'index'])->name('admin.dashboard'); 
+    Route::get('/admin/super-admin', [SuperAdminMenu::class, 'index'])->name('admin.superadmin'); 
 
-    Route::get('/admin/buat-kupon', [AdminMakeCoupon::class, 'index'])->name('admin.buat-kupon'); 
+    Route::get('/admin/manage-kupon', [AdminManageCoupon::class, 'index'])->name('admin.manage-kupon'); 
     
     //bagian event
     Route::get('/admin/event', [AdminEventPageController::class, 'index'])->name('admin.event'); 

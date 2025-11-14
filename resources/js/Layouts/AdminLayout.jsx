@@ -1,5 +1,5 @@
 import React from "react";
-import { Link, useForm, usePage  } from "@inertiajs/react";
+import { Link, useForm, usePage } from "@inertiajs/react";
 
 export default function AdminLayout({ children }) {
     const { post } = useForm();
@@ -59,14 +59,26 @@ export default function AdminLayout({ children }) {
                     </li>
                     <li>
                         <Link
-                            href={route("admin.buat-kupon")} // Asumsi nama route
+                            href={route("admin.superadmin")} // Ganti '#' dengan route-nya nanti
                             className={`mb-1 block rounded-md p-3 font-bold no-underline transition-colors duration-150 ${
-                                route().current("admin.buat-kupon")
+                                route().current("admin.superadmin") // Ganti nama route-nya
                                     ? "bg-blue-500 text-white"
                                     : "text-gray-200 hover:bg-blue-700"
                             }`}
                         >
-                            Buat Kupon
+                            Menu Super Admin
+                        </Link>
+                    </li>
+                    <li>
+                        <Link
+                            href={route("admin.manage-kupon")} // Asumsi nama route
+                            className={`mb-1 block rounded-md p-3 font-bold no-underline transition-colors duration-150 ${
+                                route().current("admin.manage-kupon")
+                                    ? "bg-blue-500 text-white"
+                                    : "text-gray-200 hover:bg-blue-700"
+                            }`}
+                        >
+                            Manage Kupon
                         </Link>
                     </li>
                     <li>
@@ -85,18 +97,6 @@ export default function AdminLayout({ children }) {
                             }`}
                         >
                             Undi Pemenang
-                        </Link>
-                    </li>
-                    <li>
-                        <Link
-                            href="#" // Ganti '#' dengan route-nya nanti
-                            className={`mb-1 block rounded-md p-3 font-bold no-underline transition-colors duration-150 ${
-                                route().current("admin.superadmin") // Ganti nama route-nya
-                                    ? "bg-blue-500 text-white"
-                                    : "text-gray-200 hover:bg-blue-700"
-                            }`}
-                        >
-                            Menu Super Admin
                         </Link>
                     </li>
                     <li>

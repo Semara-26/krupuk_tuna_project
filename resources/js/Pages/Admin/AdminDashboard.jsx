@@ -111,29 +111,7 @@ export default function AdminDashboard({
                 </div>
             </div>
 
-            {/* ... (Form Cek Status Kupon) ... */}
-            <div className="mt-8 rounded-lg bg-white p-6 shadow-md">
-                <h3 className="mt-0 text-xl font-semibold text-gray-800">
-                    Cek Status Kupon
-                </h3>
-                <p className="mb-4 text-gray-600">
-                    Masukkan kode kupon untuk melihat statusnya.
-                </p>
-                <form className="flex" onSubmit={handleCheckCoupon}>
-                    <input
-                        type="text"
-                        name="couponCode"
-                        placeholder="Masukkan kode kupon..."
-                        className="flex-grow rounded-l-md border border-gray-300 px-4 py-2 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-emerald-500"
-                    />
-                    <button
-                        type="submit"
-                        className="rounded-r-md bg-emerald-600 px-5 py-2 font-medium text-white hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"
-                    >
-                        Cek Kupon
-                    </button>
-                </form>
-            </div>
+            
         </AdminLayout>
     );
 }
