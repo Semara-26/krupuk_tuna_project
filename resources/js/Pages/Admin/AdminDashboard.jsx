@@ -1,5 +1,3 @@
-// File: resources/js/Pages/Admin/AdminDashboard.jsx (Versi baru)
-
 import React from "react";
 import AdminLayout from "@/Layouts/AdminLayout"; // <-- 1. Import layout baru
 import { Head, router } from "@inertiajs/react"; // <-- 2. Import router
@@ -8,36 +6,64 @@ import Swal from "sweetalert2";
 import "sweetalert2/dist/sweetalert2.min.css";
 
 // Terima 'auth' dan props lain dari backend
-export default function AdminDashboard({ 
-    auth, 
-    expired_coupons, 
-    active_coupons, 
+export default function AdminDashboard({
+    auth,
+    expired_coupons,
+    active_coupons,
     all_coupons,
-    admin 
+    admin,
 }) {
-    
-    // Pindahkan fungsi 'handleCheckCoupon' ke sini
     const handleCheckCoupon = (event) => {
         event.preventDefault();
         const couponCode = event.target.elements.couponCode.value;
 
-        // Kita ganti 'alert' pakai 'axios' beneran
-        // Asumsi route-nya 'admin.coupon.check'
-        axios.get(route('admin.coupon.check', { coupon: couponCode }))
-            .then(res => {
-                // Tampilkan info user (res.data.data[0].full_name)
-                Swal.fire({
-                    title: 'Kupon Ditemukan!',
-                    html: `Kupon <b>${couponCode}</b> adalah milik:<br/><b>${res.data.data[0].full_name}</b>`,
-                    icon: 'success'
-                });
+        // validasi input kosong
+        if (!couponCode || couponCode.trim() === "") {
+            Swal.fire({
+                title: "Input Kosong",
+                text: "Harap masukkan kode kupon terlebih dahulu.",
+                icon: "warning",
+                confirmButtonColor: "#3085d6",
+            });
+            event.target.reset(); // Reset form-nya aja
+            return;
+        }
+
+        axios
+            .get(route("admin.coupon.check", { coupon: couponCode }))
+            .then((res) => {
+                // Cek 'code' di dalam JSON, jangan cuma status HTTP
+                if (
+                    res.data.code === 200 &&
+                    res.data.data &&
+                    res.data.data[0]
+                ) {
+                    // Ini adalah SUKSES Beneran
+                    Swal.fire({
+                        title: "Kupon Ditemukan!",
+                        html: `Kupon <b>${couponCode}</b> adalah milik:<br/><b>${res.data.data[0].full_name}</b>`,
+                        icon: "success",
+                        confirmButtonColor: "#3085d6",
+                    });
+                } else {
+                    // Ini adalah 'sukses palsu' (backend ngirim code 400 di body)
+                    Swal.fire({
+                        title: "Error!",
+                        text: res.data.message || "Kupon tidak ditemukan.", // Ambil pesan error dari backend
+                        icon: "error",
+                        confirmButtonColor: "#3085d6",
+                    });
+                }
             })
-            .catch(err => {
-                // Tampilkan error dari backend
+            .catch((err) => {
+                // Ini untuk error server beneran (500) atau 404
                 Swal.fire({
-                    title: 'Error!',
-                    text: err.response.data.message || 'Kupon tidak ditemukan.',
-                    icon: 'error'
+                    title: "Error!",
+                    text:
+                        err.response?.data?.message ||
+                        "Gagal terhubung ke server.",
+                    icon: "error",
+                    confirmButtonColor: "#3085d6",
                 });
             });
 
