@@ -4,7 +4,10 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class Reseller extends Model
+class CouponFile extends Model
 {
     //
+    public $fillable = [
+        "title"
+    ];
 }

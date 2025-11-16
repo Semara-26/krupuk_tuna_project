@@ -5,6 +5,10 @@ export default function AdminLayout({ children }) {
     const { post } = useForm();
     const { props } = usePage();
     const admin = props.admin; // now this works!
+    const role = props.auth.user;
+    console.log("FULL PAGE PROPS:", props);
+    console.log("ADMIN FROM PROPS:", admin);
+    console.log("ADMIN ROLE:", admin?.role);
 
     // Fungsi untuk Log out
     // const handleLogout = (e) => {
@@ -57,18 +61,20 @@ export default function AdminLayout({ children }) {
                             Dashboard
                         </Link>
                     </li>
-                    <li>
-                        <Link
-                            href={route("admin.superadmin")} // Ganti '#' dengan route-nya nanti
-                            className={`mb-1 block rounded-md p-3 font-bold no-underline transition-colors duration-150 ${
-                                route().current("admin.superadmin") // Ganti nama route-nya
-                                    ? "bg-blue-500 text-white"
-                                    : "text-gray-200 hover:bg-blue-700"
-                            }`}
-                        >
-                            Menu Super Admin
-                        </Link>
-                    </li>
+                    {role.role === "superadmin" && (
+                        <li>
+                            <Link
+                                href={route("admin.superadmin")}
+                                className={`mb-1 block rounded-md p-3 font-bold no-underline transition-colors duration-150 ${
+                                    route().current("admin.superadmin")
+                                        ? "bg-blue-500 text-white"
+                                        : "text-gray-200 hover:bg-blue-700"
+                                }`}
+                            >
+                                Menu Super Admin
+                            </Link>
+                        </li>
+                    )}
                     <li>
                         <Link
                             href={route("admin.manage-kupon")} // Asumsi nama route

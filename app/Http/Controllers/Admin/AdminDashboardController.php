@@ -21,13 +21,11 @@ class AdminDashboardController extends Controller
                 $active_coupons++;
             }
         }        
-        $admin_name = Auth::guard('admin')->user()->username;
 
         return Inertia::render('Admin/AdminDashboard', [
             "all_coupons" => count($all_coupons),
             "expired_coupons" => $expired_coupons,
             "active_coupons" => $active_coupons,
-            "admin" => ucfirst($admin_name) 
         ]);
     }
 

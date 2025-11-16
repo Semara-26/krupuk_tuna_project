@@ -1,46 +1,133 @@
 import React, { useState } from "react";
 import AdminLayout from "@/Layouts/AdminLayout";
 import { Head } from "@inertiajs/react";
+import axios from "axios";
+import Swal from "sweetalert2";
 
-const dummyCoupons = [
-    { id: 1, code: "HEMAT123", status: 0 },
-    { id: 2, code: "DISKON50K", status: 1 },
-    { id: 3, code: "FREEONGKIR", status: 0 },
-];
+export default function AdminManageCoupon({ auth, couponFiles }) {
+    const [code, setCode] = useState(1);
 
-export default function AdminManageCoupon({ auth }) {
-    const [code, setCode] = useState("");
-    const [status, setStatus] = useState(0);
-    const [searchTerm, setSearchTerm] = useState("");
-
+    // Generate new coupons (download PDF)
     const submitCreateCoupon = (e) => {
         e.preventDefault();
-        alert(
-            `Simulasi membuat kupon:\nKode: ${code}\nStatus: ${
-                status === 0 ? "Aktif" : "Expired"
-            }`
+
+        Swal.fire({
+            title: "Membuat kupon...",
+            allowOutsideClick: false,
+            didOpen: () => Swal.showLoading(),
+        });
+
+        axios({
+            url: route("admin.generate-coupons", { num: code }),
+            method: "GET",
+            responseType: "blob",
+        })
+            .then((response) => {
+                Swal.close();
+
+                const disposition = response.headers["content-disposition"];
+                let filename = "file.pdf";
+
+                if (disposition && disposition.includes("filename=")) {
+                    filename = disposition
+                        .split("filename=")[1]
+                        .replace(/"/g, "");
+                }
+
+                const blobURL = window.URL.createObjectURL(
+                    new Blob([response.data])
+                );
+                const link = document.createElement("a");
+                link.href = blobURL;
+                link.setAttribute("download", filename);
+                document.body.appendChild(link);
+                link.click();
+                link.remove();
+
+                Swal.fire({
+                    icon: "success",
+                    title: "Berhasil membuat kupon!",
+                    text: filename,
+                }).then(() => {
+                    window.location.reload();
+                });
+            })
+
+            .catch(() => {
+                Swal.fire({
+                    icon: "error",
+                    title: "Gagal membuat kupon!",
+                });
+            });
+    };
+
+    // Download existing coupon file (by ID)
+    const downloadExistingFile = (fileId) => {
+        Swal.fire({
+            title: "Sedang menyiapkan file...",
+            allowOutsideClick: false,
+            didOpen: () => Swal.showLoading(),
+        });
+
+        console.log(
+            "[DOWNLOAD] Start request to:",
+            `/admin/download-coupons/${fileId}`
         );
-        setCode("");
-        setStatus(0);
-    };
 
-    const handleDelete = (couponId) => {
-        if (
-            confirm(
-                `Apakah Anda yakin ingin menghapus kupon ID ${couponId}? (Simulasi)`
-            )
-        ) {
-            alert(`Simulasi HAPUS kupon ID ${couponId}`);
-        }
-    };
+        axios({
+            url: `/admin/download-coupons/${fileId}`,
+            method: "GET",
+            responseType: "blob",
+            headers: {
+                "X-Requested-With": "XMLHttpRequest",
+            },
+        })
+            .then((response) => {
+                console.log("[DOWNLOAD] RESPONSE OK:", response);
+                Swal.close();
 
-    const handleUpdate = (couponId) => {
-        alert(`Simulasi UPDATE kupon ID ${couponId}`);
-    };
+                const disposition = response.headers["content-disposition"];
+                console.log("[DOWNLOAD] disposition header:", disposition);
 
-    const filteredCoupons = dummyCoupons.filter((coupon) =>
-        coupon.code.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+                let filename = "file.pdf";
+
+                if (disposition && disposition.includes("filename=")) {
+                    filename = disposition
+                        .split("filename=")[1]
+                        .replace(/"/g, "");
+                }
+
+                console.log("[DOWNLOAD] filename:", filename);
+
+                const blob = new Blob([response.data], {
+                    type: "application/pdf",
+                });
+                const blobURL = window.URL.createObjectURL(blob);
+
+                const link = document.createElement("a");
+                link.href = blobURL;
+                link.download = filename;
+
+                document.body.appendChild(link);
+                link.click();
+                link.remove();
+
+                Swal.fire({
+                    icon: "success",
+                    title: "Download berhasil!",
+                    text: filename,
+                });
+            })
+            .catch((error) => {
+                Swal.close();
+
+                Swal.fire({
+                    icon: "error",
+                    title: "Gagal mendownload file!",
+                    text: "Silakan cek console untuk detail error.",
+                });
+            });
+    };
 
     return (
         <AdminLayout user={auth.user}>
@@ -51,134 +138,99 @@ export default function AdminManageCoupon({ auth }) {
             </h2>
             <p className="text-gray-600">Admin akan membuat Kupon</p>
 
-            <div>
-                <div className="p-6 bg-white rounded-lg shadow-md max-w-2xl">
-                    <h3 className="text-xl font-semibold mb-4">
-                        Buat Kupon Baru
-                    </h3>
-                    <form onSubmit={submitCreateCoupon}>
-                        <div className="mb-4">
-                            <label
-                                htmlFor="code"
-                                className="block text-sm font-medium text-gray-700 mb-1"
-                            >
-                                Kode Kupon (Biarkan kosong untuk generate
-                                otomatis)
-                            </label>
-                            <input
-                                type="text"
-                                id="code"
-                                value={code}
-                                onChange={(e) => setCode(e.target.value)}
-                                className="w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500"
-                                placeholder="Contoh: HEMAT100K"
-                            />
-                        </div>
+            {/* ======== FORM BUAT KUPON ======== */}
+            <div className="p-6 bg-white rounded-lg shadow-md max-w-md mt-6">
+                <h3 className="text-2xl font-bold mb-1">Buat Kupon</h3>
+                <p className="text-gray-600 mb-4">
+                    Masukkan total kupon yang ingin dibuat.
+                </p>
 
-                        <div className="mb-4">
-                            <label
-                                htmlFor="status"
-                                className="block text-sm font-medium text-gray-700 mb-1"
-                            >
-                                Status Awal
-                            </label>
-                            <select
-                                id="status"
-                                value={status}
-                                onChange={(e) => setStatus(e.target.value)}
-                                className="w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500"
-                            >
-                                <option value="0">
-                                    Aktif (Belum Digunakan)
-                                </option>
-                                <option value="1">
-                                    Expired (Sudah Digunakan)
-                                </option>
-                            </select>
-                        </div>
+                <form
+                    onSubmit={submitCreateCoupon}
+                    className="flex items-center gap-3"
+                >
+                    <input
+                        type="number"
+                        min="1"
+                        value={code}
+                        onChange={(e) => setCode(e.target.value)}
+                        className="w-24 rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 text-center"
+                    />
 
-                        <button
-                            type="submit"
-                            className="px-5 py-2 bg-emerald-600 text-white rounded-md font-medium hover:bg-emerald-700"
-                        >
-                            Simpan Kupon
-                        </button>
-                    </form>
+                    <button
+                        type="submit"
+                        className="px-5 py-2 bg-gray-200 text-gray-800 rounded-md font-medium hover:bg-gray-300"
+                    >
+                        Buat
+                    </button>
+                </form>
+            </div>
+
+            {/* ======== TABEL FILE KUPON ======== */}
+            <div className="mt-8 bg-white rounded-lg shadow-md overflow-hidden">
+                <div className="p-6">
+                    <h3 className="text-xl font-semibold">Daftar File Kupon</h3>
                 </div>
 
-                <div className="mt-8 bg-white rounded-lg shadow-md overflow-hidden">
-                    <div className="p-6 flex justify-between items-center">
-                        <h3 className="text-xl font-semibold">Daftar Kupon</h3>
-                        <input
-                            type="text"
-                            placeholder="Cari kode kupon..."
-                            className="rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500"
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                        />
-                    </div>
+                <div className="overflow-x-auto">
+                    <table className="w-full min-w-full divide-y divide-gray-200">
+                        <thead className="bg-gray-50">
+                            <tr>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    No
+                                </th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Nama File
+                                </th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Tanggal
+                                </th>
+                                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Aksi
+                                </th>
+                            </tr>
+                        </thead>
 
-                    <div className="overflow-x-auto">
-                        <table className="w-full min-w-full divide-y divide-gray-200">
-                            <thead className="bg-gray-50">
-                                <tr>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        ID
-                                    </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Kode Kupon
-                                    </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Status
-                                    </th>
-                                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Aksi
-                                    </th>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                            {couponFiles.map((file, index) => (
+                                <tr key={file.id}>
+                                    <td className="px-6 py-4 text-sm text-gray-900">
+                                        {index + 1}
+                                    </td>
+
+                                    <td className="px-6 py-4 text-sm font-medium text-gray-900">
+                                        {file.title}.pdf
+                                    </td>
+
+                                    <td className="px-6 py-4 text-sm text-gray-700">
+                                        {file.created_at.split(" ")[0]}
+                                    </td>
+
+                                    <td className="px-6 py-4 text-right text-sm">
+                                        <button
+                                            onClick={() =>
+                                                downloadExistingFile(file.id)
+                                            }
+                                            className="text-blue-600 hover:text-blue-900"
+                                        >
+                                            Download
+                                        </button>
+                                    </td>
                                 </tr>
-                            </thead>
-                            <tbody className="bg-white divide-y divide-gray-200">
-                                {filteredCoupons.map((coupon) => (
-                                    <tr key={coupon.id}>
-                                        <td className="px-6 py-4 whitespace-nowkrap text-sm text-gray-900">
-                                            {coupon.id}
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                            {coupon.code}
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm">
-                                            {coupon.status ? (
-                                                <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
-                                                    Expired
-                                                </span>
-                                            ) : (
-                                                <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                                                    Aktif
-                                                </span>
-                                            )}
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
-                                            <button
-                                                onClick={() =>
-                                                    handleUpdate(coupon.id)
-                                                }
-                                                className="text-indigo-600 hover:text-indigo-900"
-                                            >
-                                                Update
-                                            </button>
-                                            <button
-                                                onClick={() =>
-                                                    handleDelete(coupon.id)
-                                                }
-                                                className="text-red-600 hover:text-red-900"
-                                            >
-                                                Hapus
-                                            </button>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
+                            ))}
+
+                            {couponFiles.length === 0 && (
+                                <tr>
+                                    <td
+                                        colSpan="4"
+                                        className="px-6 py-4 text-center text-gray-500"
+                                    >
+                                        Belum ada file kupon.
+                                    </td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </AdminLayout>

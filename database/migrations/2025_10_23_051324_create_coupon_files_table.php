@@ -11,11 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('coupons', function (Blueprint $table) {
-            $table->string('id')->primary()->unique()->index();
-            $table->enum('status', [0, 1, 2])->default(0);
-            $table->unsignedBigInteger("coupon_files_id");
-            $table->foreign("coupon_files_id")->references("id")->on("coupon_files");
+        Schema::create('coupon_files', function (Blueprint $table) {
+            $table->id();
+            $table->string("title");
             $table->timestamps();
         });
     }
@@ -25,6 +23,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('coupon');
+        Schema::dropIfExists('coupon_files');
     }
 };

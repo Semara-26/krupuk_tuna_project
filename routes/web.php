@@ -11,10 +11,12 @@ use App\Http\Controllers\Admin\GachaController;
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\CouponConfirmationController;
 use App\Http\Controllers\CouponController;
+use App\Http\Controllers\CouponPDFController;
 use App\Http\Controllers\CourierController;
 use App\Http\Controllers\LandingPageController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\WinnerController;
+use App\Http\Middleware\SuperAdminMiddleware;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Auth;
@@ -81,42 +83,44 @@ Route::get('/coupon/check/{coupon}', [CouponConfirmationController::class, 'chec
 //disini harus login dulu
 Route::middleware('auth:admin')->group(function () {
     //munculin dashboard
-    Route::get('/admin/dashboard', [AdminDashboardController::class, 'index'])->name('admin.dashboard'); 
-    Route::get('/admin/super-admin', [SuperAdminMenu::class, 'index'])->name('admin.superadmin'); 
-
-    Route::get('/admin/manage-kupon', [AdminManageCoupon::class, 'index'])->name('admin.manage-kupon'); 
+    Route::get('/admin/dashboard', [AdminDashboardController::class, 'index'])->name('admin.dashboard');
     
+    Route::get('/admin/super-admin', [SuperAdminMenu::class, 'index'])->name('admin.superadmin')->middleware(SuperAdminMiddleware::class);
+
+    Route::get('/admin/manage-kupon', [AdminManageCoupon::class, 'index'])->name('admin.manage-kupon');
+
+    Route::post('/admin/create-admin', [SuperAdminMenu::class, 'store'])->name('admin.create-admin');
+
+    Route::delete('/admin/delete-admin/{id}', [SuperAdminMenu::class, 'destroy'])->name('admin.delete-admin');
     //bagian event
-    Route::get('/admin/event', [AdminEventPageController::class, 'index'])->name('admin.event'); 
-    
-    //buat cek kupon
-    Route::get('/admin/coupon/check/{coupon}', [AdminEventController::class, 'checkCoupon'])->name('admin.coupon.check'); 
-    
-    //nyimpen semua pemenang 
-    Route::post('/admin/winners/store', [AdminEventController::class, 'storeWinners'])->name('admin.winners.store'); 
-    
-    //random gacha
-    Route::get('/admin/draw/{event_id}/{num}', [AdminEventController::class, 'randomGacha'])->name('admin.draw'); 
-    
-    //buat event baru
-    Route::post('/admin/create-event', [AdminEventController::class, 'createGachaEvent'])->name('admin.create-event'); 
-    
-    //edit event 
-    Route::post('/admin/update-event', [AdminEventController::class, 'updateGachaEvent'])->name('admin.update-event'); 
-    
-    //selesaiin event
-    Route::get('/admin/end-event/{event_id}', [AdminEventController::class, 'endGachaEvent'])->name('admin.end-event'); 
-    
-    //hapus event
-    Route::get('/admin/delete-event/{event_id}', [AdminEventController::class, 'removeEvent'])->name('admin.delete-event'); 
+    Route::get('/admin/event', [AdminEventPageController::class, 'index'])->name('admin.event');
 
-    Route::get('/admin/generate-coupons/{num}', [AdminCouponController::class, 'couponsGetter'])->name('admin.generate-coupons'); 
+    //buat cek kupon
+    Route::get('/admin/coupon/check/{coupon}', [AdminEventController::class, 'checkCoupon'])->name('admin.coupon.check');
+
+    //nyimpen semua pemenang 
+    Route::post('/admin/winners/store', [AdminEventController::class, 'storeWinners'])->name('admin.winners.store');
+
+    //random gacha
+    Route::get('/admin/draw/{event_id}/{num}', [AdminEventController::class, 'randomGacha'])->name('admin.draw');
+
+    //buat event baru
+    Route::post('/admin/create-event', [AdminEventController::class, 'createGachaEvent'])->name('admin.create-event');
+
+    //edit event 
+    Route::post('/admin/update-event', [AdminEventController::class, 'updateGachaEvent'])->name('admin.update-event');
+
+    //selesaiin event
+    Route::get('/admin/end-event/{event_id}', [AdminEventController::class, 'endGachaEvent'])->name('admin.end-event');
+
+    //hapus event
+    Route::get('/admin/delete-event/{event_id}', [AdminEventController::class, 'removeEvent'])->name('admin.delete-event');
+
+    Route::get('/admin/generate-coupons/{num}', [AdminCouponController::class, 'couponsGetter'])->name('admin.generate-coupons');
+
+    Route::get('/admin/download-coupons/{id}', [CouponPDFController::class, 'downloadExistingFile'])->name('admin.download-coupon-file');
 });
 
 Route::get('/admin/login', [AdminLoginController::class, 'index'])->name('login');
 Route::post('/admin/login', [AdminLoginController::class, 'adminLogin'])->name('admin.login')->middleware('throttle:10,1');
 Route::post('/admin/logout', [AdminLoginController::class, 'adminLogout'])->name('admin.logout');
-
-
-
-

@@ -21,7 +21,7 @@ class AdminLoginController extends Controller
     {
         $validateData = $request->validate([
             'username' => 'required|min:3',
-            'password' => 'required|min:3'
+            'password' => 'required|min:8'
         ]);
 
         if (!Auth::guard('admin')->attempt($validateData)) {
