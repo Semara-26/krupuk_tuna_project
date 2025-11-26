@@ -39,6 +39,17 @@ export default function EventAktifCard({ event, onEdit, onDelete, onFinish }) {
                     </ul>
                 </div>
             </div>
+
+            <div className="mt-6 mb-3">
+                <a 
+                    href={route('admin.live-draw', { event_id: event.id })} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="block w-full text-center px-4 py-3 bg-blue-600 text-white font-bold rounded-md hover:bg-blue-700 shadow-md transition-all hover:shadow-lg"
+                >
+                    🖥️ Buka Layar Live Draw
+                </a>
+            </div>
             
             <div className="mt-6 flex flex-wrap gap-2">
                 <button 
