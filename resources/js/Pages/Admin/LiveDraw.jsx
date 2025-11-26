@@ -1,35 +1,44 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Head } from "@inertiajs/react";
 import PrimaryButton from "@/Components/PrimaryButton";
-import ReactConfetti from "react-confetti"; // Biar meriah pas menang!
+import ReactConfetti from "react-confetti";
 import Swal from "sweetalert2";
-import axios from "axios"; // Nanti dipakai buat nembak backend
+import axios from "axios";
 
-export default function LiveDraw({ event, prizes }) {
+export default function LiveDraw({ event, prizes, winners }) {
     // --- STATE UTAMA ---
-    const [selectedPrize, setSelectedPrize] = useState(prizes[0]?.id || ""); // Hadiah yang mau diundi
-    const [isRolling, setIsRolling] = useState(false); // Status animasi
-    const [displayNumber, setDisplayNumber] = useState("XXXX-XXXXXX"); // Angka yang tampil di layar
-    const [winner, setWinner] = useState(null); // Data pemenang (kalau udah dapet)
-    const [showConfetti, setShowConfetti] = useState(false); // Efek konfeti
+    const [selectedPrizeType, setSelectedPrizeType] = useState(prizes[0]?.prize_types_id || "");
+    const [isRolling, setIsRolling] = useState(false);
+    const [displayNumber, setDisplayNumber] = useState("XXXXXXXX");
+    const [currentWinner, setCurrentWinner] = useState(null);
+    const [showConfetti, setShowConfetti] = useState(false);
+    
+    // STATE BARU: Simpan array winners, akan dikurangi setiap kali ada pemenang
+    const [remainingWinners, setRemainingWinners] = useState(winners || []);
 
-    // Ref untuk interval animasi (biar bisa di-stop)
     const rollingInterval = useRef(null);
+
+    // --- FUNGSI: HITUNG SISA QTY PER PRIZE TYPE ---
+    const getRemainingQty = (prizeTypeId) => {
+        return remainingWinners.filter(w => w.prize_types_id == prizeTypeId).length;
+    };
 
     // --- FUNGSI: MENGACAK NOMOR (EFEK VISUAL) ---
     const startRollingEffect = () => {
-        // Ini cuma efek visual biar kelihatan "ngacak"
-        // Kita ganti-ganti angka setiap 50ms
         rollingInterval.current = setInterval(() => {
-            // Bikin nomor kupon acak pura-pura
-            const randomPart = Math.floor(100000 + Math.random() * 900000);
-            setDisplayNumber(`KT-2025-${randomPart}`);
+            // Generate 8 random characters (numbers + letters, excluding I and U)
+            const chars = '0123456789ABCDEFGHJKLMNOPQRSTVWXYZ'; // Removed I and U
+            let randomCode = '';
+            for (let i = 0; i < 8; i++) {
+                randomCode += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            setDisplayNumber(randomCode);
         }, 50);
     };
 
     // --- FUNGSI UTAMA: TOMBOL "MULAI ACAK" ---
     const handleStartDraw = async () => {
-        if (!selectedPrize) {
+        if (!selectedPrizeType) {
             Swal.fire(
                 "Pilih Hadiah",
                 "Silakan pilih hadiah yang akan diundi dulu.",
@@ -38,61 +47,70 @@ export default function LiveDraw({ event, prizes }) {
             return;
         }
 
-        // 1. Mulai animasi visual dulu
+        // Filter winners berdasarkan prize_types_id yang dipilih
+        const filteredWinners = remainingWinners.filter(
+            w => w.prize_types_id == selectedPrizeType
+        );
+
+        // Cek apakah masih ada pemenang tersisa
+        if (filteredWinners.length === 0) {
+            Swal.fire(
+                "Tidak Ada Pemenang",
+                "Semua pemenang untuk hadiah ini sudah diundi.",
+                "info"
+            );
+            return;
+        }
+
+        // Ambil pemenang pertama dari array (FIFO)
+        const nextWinner = filteredWinners[0];
+
+        // 1. Mulai animasi visual
         setIsRolling(true);
-        setWinner(null);
+        setCurrentWinner(null);
         setShowConfetti(false);
         startRollingEffect();
 
+        // 2. Simulasi delay (seolah-olah backend sedang proses)
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+
+        // 3. Stop animasi dan tampilkan pemenang
+        stopRollingEffect(nextWinner);
+
+        // 4. Hapus pemenang dari array
+        const updatedWinners = remainingWinners.filter(
+            w => w.coupon_code !== nextWinner.coupon_code
+        );
+        setRemainingWinners(updatedWinners);
+
+        // 5. Simpan ke cache di backend
         try {
-            // 2. Panggil Backend untuk minta 1 pemenang (Logic Hybrid)
-            // NANTI: Ganti ini dengan axios.post ke API backend beneran
-            // const res = await axios.post(route('admin.draw-single-winner'), {
-            //    event_id: event.id,
-            //    prize_id: selectedPrize
-            // });
-            // const realWinner = res.data;
-
-            // --- SIMULASI BACKEND (DUMMY) ---
-            // Kita pura-pura nunggu 2 detik seolah-olah backend lagi mikir
-            await new Promise((resolve) => setTimeout(resolve, 2000));
-
-            const realWinner = {
-                coupon_code: "KT-2025-WINNER",
-                name: "Budi Santoso",
-                city: "Denpasar",
-            };
-            // --------------------------------
-
-            // 3. Setelah dapet pemenang dari backend, kita stop animasi
-            stopRollingEffect(realWinner);
+            // Pastikan selalu kirim array, bahkan jika kosong
+            await axios.post(route('admin.winner.store-left'), {
+                event_id: event.id,
+                winners: updatedWinners.length > 0 ? updatedWinners : []
+            });
         } catch (error) {
-            console.error("Gagal mengundi:", error);
-            clearInterval(rollingInterval.current);
-            setIsRolling(false);
-            setDisplayNumber("ERROR");
-            Swal.fire("Error", "Gagal mengambil data pemenang.", "error");
+            console.error('Gagal menyimpan ke cache:', error);
         }
     };
 
     // --- FUNGSI: STOP ANIMASI & TAMPILKAN PEMENANG ---
     const stopRollingEffect = (winnerData) => {
-        // Jangan langsung berhenti mendadak, kasih delay dikit biar smooth
         setTimeout(() => {
-            clearInterval(rollingInterval.current); // Stop acak angka
+            clearInterval(rollingInterval.current);
 
-            setDisplayNumber(winnerData.coupon_code); // Tampilkan nomor asli pemenang
-            setWinner(winnerData); // Simpan data lengkap pemenang
-            setIsRolling(false); // Update status
-            setShowConfetti(true); // Tampilkan konfeti!
+            setDisplayNumber(winnerData.coupon_code);
+            setCurrentWinner(winnerData);
+            setIsRolling(false);
+            setShowConfetti(true);
 
-            // Matikan konfeti otomatis setelah 7 detik
             setTimeout(() => setShowConfetti(false), 7000);
-        }, 1000); // Delay 1 detik sebelum angka berhenti total
+        }, 1000);
     };
 
-    // Cari nama hadiah yang lagi dipilih buat ditampilkan
-    const currentPrizeObj = prizes.find((p) => p.id == selectedPrize);
+    // Cari nama hadiah yang lagi dipilih
+    const currentPrizeObj = prizes.find((p) => p.prize_types_id == selectedPrizeType);
 
     return (
         <div className="min-h-screen bg-slate-900 flex flex-col items-center relative overflow-hidden font-sans">
@@ -101,7 +119,7 @@ export default function LiveDraw({ event, prizes }) {
             {showConfetti && <ReactConfetti recycle={true} />}
 
             {/* HEADER */}
-            <div className="w-full p-6 flex justify-between items-center z-20 relative">
+            <div className="w-full p-6 flex items-center z-20 relative">
                 {/* Logo kiri */}
                 <div className="flex items-center gap-4">
                     <img
@@ -111,16 +129,13 @@ export default function LiveDraw({ event, prizes }) {
                     />
                 </div>
 
-                {/* Judul Tengah (Hidden di mobile, muncul di desktop) */}
-                <h1 className="hidden md:block text-2xl md:text-4xl font-black text-yellow-400 uppercase tracking-widest drop-shadow-md">
+                {/* Judul Tengah (Absolute centered) */}
+                <h1 className="hidden md:block absolute left-1/2 transform -translate-x-1/2 text-2xl md:text-4xl font-black text-yellow-400 uppercase tracking-widest drop-shadow-md">
                     {event.title}
                 </h1>
-
-                {/* Spacer kanan biar seimbang */}
-                <div className="w-12 md:w-16"></div>
             </div>
 
-            {/* KONTEN TENGAH (Flex Grow biar ngisi ruang sisa) */}
+            {/* KONTEN TENGAH */}
             <div className="flex-grow flex flex-col items-center justify-center w-full max-w-6xl px-4 z-10 -mt-10">
                 {/* 1. Judul Hadiah */}
                 <div className="mb-6 md:mb-10 text-center">
@@ -136,7 +151,6 @@ export default function LiveDraw({ event, prizes }) {
 
                 {/* 2. Kotak Nomor Kupon */}
                 <div className="bg-white text-slate-900 rounded-3xl p-8 md:p-16 shadow-[0_0_50px_rgba(255,255,255,0.1)] border-8 border-slate-700 mb-8 w-full max-w-4xl mx-auto transform transition-all duration-300 relative overflow-hidden group">
-                    {/* Efek kilau di background kotak */}
                     <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-slate-100 to-transparent opacity-0 group-hover:opacity-30 transition-opacity duration-500"></div>
 
                     <div
@@ -152,39 +166,39 @@ export default function LiveDraw({ event, prizes }) {
                 </div>
 
                 {/* 3. Data Pemenang */}
-                {winner && !isRolling && (
+                {currentWinner && !isRolling && (
                     <div className="bg-green-600 bg-opacity-90 backdrop-blur-sm border-2 border-green-400 rounded-2xl p-6 md:p-8 mb-8 text-center animate-bounce-in shadow-2xl w-full max-w-2xl">
                         <h2 className="text-xl md:text-2xl font-bold text-green-100 mb-2 uppercase tracking-wider">
                             Selamat Kepada
                         </h2>
                         <p className="text-3xl md:text-5xl font-black text-white mb-2 drop-shadow-md">
-                            {winner.name}
+                            {currentWinner.full_name}
                         </p>
                         <p className="text-lg md:text-2xl text-green-200 font-semibold flex items-center justify-center gap-2">
-                            <span className="opacity-75">📍</span> {winner.city}
+                            <span className="opacity-75">🎟️</span> {currentWinner.coupon_code}
                         </p>
                     </div>
                 )}
 
-                {/* 4. Kontrol Admin (Di Bawah) */}
+                {/* 4. Kontrol Admin */}
                 <div className="flex flex-col md:flex-row gap-4 items-end bg-slate-800/50 p-4 rounded-2xl backdrop-blur-md border border-slate-700">
                     <div className="text-left w-full md:w-auto">
                         <label className="block text-xs text-slate-400 mb-1 uppercase font-bold tracking-wider">
                             Hadiah
                         </label>
                         <select
-                            value={selectedPrize}
+                            value={selectedPrizeType}
                             onChange={(e) => {
-                                setSelectedPrize(e.target.value);
-                                setWinner(null);
-                                setDisplayNumber("XXXX-XXXXXX");
+                                setSelectedPrizeType(e.target.value);
+                                setCurrentWinner(null);
+                                setDisplayNumber("XXXXXXXX");
                             }}
                             disabled={isRolling}
                             className="bg-slate-700 border-slate-600 text-white rounded-lg px-4 py-2 w-full md:w-64 focus:ring-yellow-500 focus:border-yellow-500 shadow-inner"
                         >
                             {prizes.map((prize) => (
-                                <option key={prize.id} value={prize.id}>
-                                    {prize.prize_name} (Sisa: {prize.qty})
+                                <option key={prize.id} value={prize.prize_types_id}>
+                                    {prize.prize_name} (Sisa: {getRemainingQty(prize.prize_types_id)})
                                 </option>
                             ))}
                         </select>
@@ -211,7 +225,7 @@ export default function LiveDraw({ event, prizes }) {
                 </div>
             </div>
 
-            {/* Background Decoration (Tetap sama) */}
+            {/* Background Decoration */}
             <div className="absolute inset-0 z-0 opacity-30 pointer-events-none overflow-hidden">
                 <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-500 rounded-full mix-blend-multiply filter blur-3xl animate-blob"></div>
                 <div className="absolute top-1/3 right-1/4 w-96 h-96 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl animate-blob animation-delay-2000"></div>

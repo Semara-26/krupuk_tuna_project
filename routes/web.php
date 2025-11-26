@@ -8,6 +8,7 @@ use App\Http\Controllers\Admin\AdminEventController;
 use App\Http\Controllers\Admin\AdminEventPageController;
 use App\Http\Controllers\Admin\AdminLoginController;
 use App\Http\Controllers\Admin\GachaController;
+use App\Http\Controllers\Admin\LiveDrawPageController;
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\CouponConfirmationController;
 use App\Http\Controllers\CouponController;
@@ -73,23 +74,8 @@ Route::get('/lacak', function () {
     ]);
 })->name('lacak');
 
-// Route untuk halaman Live Draw (Layar Proyektor)
-Route::get('/admin/live-draw/{event_id}', function ($event_id) {
-    // Nanti ini diganti pakai Controller beneran buat ambil data Event & Hadiah
-    // Sekarang kita pakai Dummy Data dulu biar UI-nya jalan
-    
-    return Inertia::render('Admin/LiveDraw', [
-        'event' => [
-            'id' => $event_id,
-            'title' => 'Gebyar Undian Akhir Tahun', // Dummy
-        ],
-        'prizes' => [
-            ['id' => 1, 'prize_name' => '1 Unit Sepeda Motor', 'qty' => 1],
-            ['id' => 2, 'prize_name' => '5 Unit Smartphone', 'qty' => 5],
-            ['id' => 3, 'prize_name' => '10 Voucher Belanja', 'qty' => 10],
-        ]
-    ]);
-})->name('admin.live-draw');
+
+
 
 
 //cek kupon
@@ -139,6 +125,10 @@ Route::middleware('auth:admin')->group(function () {
     Route::get('/admin/download-coupons/{id}', [CouponPDFController::class, 'downloadExistingFile'])->name('admin.download-coupon-file');
 
     Route::get('/admin/winners', [AdminEventPageController::class, 'winners'])->name('admin.winners');
+
+    Route::get('/admin/live-draw/{event_id}', [LiveDrawPageController::class, "index"])->name('admin.live-draw');
+
+    Route::post('/admin/winners/left', [LiveDrawPageController::class, 'storeCache'])->name('admin.winner.store-left');
 });
 
 Route::get('/admin/login', [AdminLoginController::class, 'index'])->name('login');
