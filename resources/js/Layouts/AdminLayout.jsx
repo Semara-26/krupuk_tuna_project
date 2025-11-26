@@ -107,6 +107,18 @@ export default function AdminLayout({ children }) {
                     </li>
                     <li>
                         <Link
+                            href={route("admin.winners")}
+                            className={`mb-1 block rounded-md p-3 font-bold no-underline transition-colors duration-150 ${
+                                route().current("admin.winners")
+                                    ? "bg-blue-500 text-white"
+                                    : "text-gray-200 hover:bg-blue-700"
+                            }`}
+                        >
+                            Riwayat Pemenang
+                        </Link>
+                    </li>
+                    <li>
+                        <Link
                             href={route("admin.logout")}
                             method="post" //
                             as="button"
