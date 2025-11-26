@@ -10,43 +10,36 @@ import Checkbox from "@/Components/Checkbox";
 
 export default function PanelUndi({
     activeEvent,
-    totalWinnersNeeded,
-    // sisaPemenang, // Kita hitung sendiri aja di sini biar real-time
+    totalWinnersNeeded, // Total kuota (misal 16)
+    sisaPemenang,      // Sisa kuota dari DB (misal 16, atau 5 kalau udah ada yg disimpen)
 }) {
-    // State untuk menyimpan daftar pemenang (Manual + Random)
+    // State untuk menyimpan daftar pemenang BARU yang akan disimpan (belum ada di DB)
     const [winners, setWinners] = useState([]);
 
-    // State untuk mode (manual = true / random = false)
     const [isManual, setIsManual] = useState(true);
-
-    // State untuk input manual
     const [couponCode, setCouponCode] = useState("");
     const [couponInfo, setCouponInfo] = useState(null);
     const [couponError, setCouponError] = useState("");
-
-    // State untuk input random
+    
+    // Default random amount adalah sisa kuota real-time
     const [randomAmount, setRandomAmount] = useState(0);
-
-    // State untuk hadiah yang dipilih
     const [selectedPrizeId, setSelectedPrizeId] = useState("");
 
-    // --- LOGIC BARU: Hitung Sisa Pemenang Secara Real-time ---
-    const winnersCount = winners.length;
-    const winnersRemaining = Math.max(0, totalWinnersNeeded - winnersCount);
+    // --- LOGIC BARU: Hitung Sisa Kuota Real-time ---
+    // Sisa Slot = (Sisa dari DB) - (Yang baru kita input di sesi ini)
+    const currentWinnersCount = winners.length;
+    const realTimeRemaining = Math.max(0, sisaPemenang - currentWinnersCount);
 
-    // Update default randomAmount tiap kali jumlah pemenang berubah
+    // Update default input random setiap kali sisa berubah
     useEffect(() => {
-        setRandomAmount(winnersRemaining);
-    }, [winnersRemaining]);
-    // ---------------------------------------------------------
+        setRandomAmount(realTimeRemaining);
+    }, [realTimeRemaining]);
+    // ------------------------------------------------
 
     const handleModeChange = (mode) => {
-        if (mode === "manual") {
-            setIsManual(true);
-        } else {
-            setIsManual(false);
-        }
-        // Reset inputan form, TAPI JANGAN RESET 'winners'
+        if (mode === "manual") setIsManual(true);
+        else setIsManual(false);
+        
         setCouponCode("");
         setCouponInfo(null);
     };
@@ -58,16 +51,14 @@ export default function PanelUndi({
 
         if (!couponCode) return;
 
-        // Validasi: Cek apakah kupon ini udah ada di daftar 'winners' lokal
-        const isAlreadyAdded = winners.some(w => w.coupon_code === couponCode);
-        if (isAlreadyAdded) {
-            Swal.fire("Gagal", "Kupon ini sudah Anda tambahkan ke daftar pemenang.", "warning");
+        // Validasi: Cek duplikasi di list lokal
+        if (winners.some(w => w.coupon_code === couponCode)) {
+            Swal.fire("Gagal", "Kupon ini barusan Anda masukkan.", "warning");
             return;
         }
 
         Swal.fire({
             title: "Memeriksa Kupon...",
-            text: "Sedang memverifikasi kode kupon",
             allowOutsideClick: false,
             didOpen: () => Swal.showLoading(),
         });
@@ -79,12 +70,10 @@ export default function PanelUndi({
                     setCouponInfo(res.data.data[0]);
                     Swal.fire({
                         icon: "success",
-                        title: "Kupon Ditemukan!",
-                        html: `<div style="text-align: left;">
-                                <p><strong>Pemilik:</strong> ${res.data.data[0].full_name}</p>
-                                <p><strong>Kode:</strong> ${couponCode}</p>
-                               </div>`,
-                        confirmButtonText: "OK",
+                        title: "Ditemukan!",
+                        text: `Pemilik: ${res.data.data[0].full_name}`,
+                        timer: 1000,
+                        showConfirmButton: false
                     });
                 } else {
                     setCouponError(res.data.message);
@@ -104,9 +93,9 @@ export default function PanelUndi({
             Swal.fire("Oops!", "Pilih hadiahnya dulu.", "warning");
             return;
         }
-        // Validasi Slot Penuh
-        if (winnersRemaining <= 0) {
-            Swal.fire("Penuh!", "Kuota pemenang untuk hadiah ini sudah penuh.", "warning");
+        // Validasi Slot Penuh (Berdasarkan sisa real-time)
+        if (realTimeRemaining <= 0) {
+            Swal.fire("Penuh!", "Kuota pemenang sudah habis untuk saat ini. Simpan dulu jika ingin melanjutkan.", "warning");
             return;
         }
 
@@ -114,43 +103,29 @@ export default function PanelUndi({
             full_name: couponInfo.full_name,
             coupon_code: couponCode,
             prize_type: selectedPrizeId,
-            source: 'manual' // Penanda buat UI (opsional)
+            source: 'manual'
         };
-        
-        // Tambah ke list (GABUNGKAN)
         setWinners([...winners, newWinner]);
-
         setCouponCode("");
         setCouponInfo(null);
-        
-        const Toast = Swal.mixin({
-            toast: true, position: 'top-end', showConfirmButton: false, timer: 3000
-        });
-        Toast.fire({ icon: 'success', title: 'Pemenang manual ditambahkan' });
     };
 
-    // --- LOGIC BARU: Generate Random Bertahap ---
     const handleGenerateRandom = () => {
         if (!selectedPrizeId) {
             Swal.fire("Oops!", "Pilih hadiahnya dulu.", "warning");
             return;
         }
-        
-        // Validasi input jumlah
         if (randomAmount <= 0) {
-            Swal.fire("Eits!", "Jumlah pemenang harus lebih dari 0.", "warning");
+            Swal.fire("Eits!", "Jumlah harus lebih dari 0.", "warning");
             return;
         }
-        if (randomAmount > winnersRemaining) {
-            Swal.fire("Kelebihan!", `Sisa kuota cuma ${winnersRemaining}. Jangan serakah ya.`, "warning");
+        // Validasi tidak boleh melebihi sisa kuota real-time
+        if (randomAmount > realTimeRemaining) {
+            Swal.fire("Kelebihan!", `Sisa kuota tinggal ${realTimeRemaining}.`, "warning");
             return;
         }
 
-        Swal.fire({
-            title: "Mengundi...",
-            allowOutsideClick: false,
-            didOpen: () => Swal.showLoading()
-        });
+        Swal.fire({ title: "Mengundi...", didOpen: () => Swal.showLoading() });
 
         axios.get(route("admin.draw", {
                 event_id: activeEvent.id,
@@ -159,44 +134,33 @@ export default function PanelUndi({
             .then((res) => {
                 Swal.close();
                 const randomWinners = res.data.data;
-                
                 const formattedWinners = randomWinners.map((w) => ({
                     ...w,
-                    prize_type: selectedPrizeId, // Pakai hadiah yang dipilih admin
+                    prize_type: selectedPrizeId,
                     source: 'random'
                 }));
-
-                // GABUNGKAN dengan pemenang manual yg udah ada
-                // Jangan ditimpa (setWinners(formattedWinners) -> SALAH)
-                setWinners(prevWinners => [...prevWinners, ...formattedWinners]);
-
-                Swal.fire("Sukses", `${randomWinners.length} pemenang random berhasil ditambahkan.`, "success");
+                
+                setWinners(prev => [...prev, ...formattedWinners]);
+                Swal.fire("Sukses", `${randomWinners.length} pemenang ditambahkan.`, "success");
             })
             .catch((err) => {
                 Swal.close();
-                Swal.fire("Error", err?.response?.data?.message || "Gagal mengundi random.", "error");
+                Swal.fire("Error", "Gagal mengundi random.", "error");
             });
     };
 
-    // Fungsi Hapus Pemenang dari List Sementara
     const removeWinner = (index) => {
         setWinners(winners.filter((_, i) => i !== index));
     };
 
+    // --- REVISI: Fungsi Simpan (Bisa Partial Save) ---
     const handleStoreWinners = () => {
         if (winners.length === 0) {
-            Swal.fire({ icon: "error", title: "Daftar pemenang masih kosong" });
+            Swal.fire({ icon: "error", title: "Belum ada pemenang baru yang dipilih" });
             return;
         }
-        // Validasi akhir sebelum simpan ke DB
-        if (winners.length !== totalWinnersNeeded) {
-             Swal.fire({ 
-                 icon: "warning", 
-                 title: "Belum Selesai", 
-                 text: `Anda baru memilih ${winners.length} dari ${totalWinnersNeeded} pemenang yang dibutuhkan.` 
-            });
-            return;
-        }
+        
+        // HAPUS validasi "harus penuh". Sekarang boleh simpan berapapun.
 
         const payload = {
             events_id: activeEvent.id,
@@ -207,34 +171,28 @@ export default function PanelUndi({
         };
 
         Swal.fire({
-            title: 'Simpan Pemenang?',
-            text: "Pastikan data sudah benar. Aksi ini tidak bisa dibatalkan.",
+            title: `Simpan ${winners.length} Pemenang?`,
+            text: "Data akan disimpan ke database dan tidak bisa diubah lagi.",
             icon: 'question',
             showCancelButton: true,
             confirmButtonText: 'Ya, Simpan',
             showLoaderOnConfirm: true,
             preConfirm: () => {
                 return axios.post(route("admin.winners.store"), payload)
-                    .then((res) => {
-                        return res;
-                    })
+                    .then((res) => { return res; })
                     .catch((err) => {
-                        Swal.showValidationMessage(
-                            `Request failed: ${err.response?.data?.message || err.message}`
-                        )
+                        Swal.showValidationMessage(err.response?.data?.message || err.message);
                     });
-            },
-            allowOutsideClick: () => !Swal.isLoading()
+            }
         }).then((result) => {
             if (result.isConfirmed) {
                 Swal.fire({
                     icon: "success",
                     title: "Tersimpan!",
-                    text: "Pemenang berhasil disimpan.",
                     timer: 1500,
                     showConfirmButton: false,
                 }).then(() => {
-                    window.location.reload();
+                    window.location.reload(); // Refresh halaman untuk update sisa kuota dari DB
                 });
             }
         });
@@ -243,20 +201,18 @@ export default function PanelUndi({
     return (
         <div className="p-6 bg-white shadow-lg rounded-lg">
             <div className="flex justify-between items-center border-b pb-2 mb-4">
-                <h3 className="text-lg font-bold text-gray-800">
-                    Panel Undi Pemenang
-                </h3>
-                {/* Indikator Kuota */}
-                <span className={`px-3 py-1 rounded-full text-xs font-bold ${winnersRemaining === 0 ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
-                    Sisa Kuota: {winnersRemaining} Orang
+                <h3 className="text-lg font-bold text-gray-800">Panel Undi Pemenang</h3>
+                {/* Indikator Sisa Kuota Real-time */}
+                <span className={`px-3 py-1 rounded-full text-xs font-bold ${realTimeRemaining === 0 ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'}`}>
+                    Sisa Slot: {realTimeRemaining} / {totalWinnersNeeded}
                 </span>
             </div>
 
-            {/* 1. PILIH HADIAH (Berlaku untuk Manual & Random) */}
+            {/* Pilih Hadiah */}
             <div className="mb-6">
-                <InputLabel value="1. Pilih Hadiah yang Sedang Diundi" />
+                <InputLabel value="1. Pilih Hadiah" />
                 <select
-                    className="w-full mt-1 rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                    className="w-full mt-1 rounded-md border-gray-300"
                     value={selectedPrizeId}
                     onChange={(e) => setSelectedPrizeId(e.target.value)}
                 >
@@ -269,33 +225,24 @@ export default function PanelUndi({
                 </select>
             </div>
 
-            {/* 2. MODE CHECKBOX */}
+            {/* Mode Checkbox */}
             <div className="flex gap-6 mb-4">
                 <label className="flex items-center cursor-pointer select-none">
-                    <Checkbox
-                        checked={isManual}
-                        onChange={() => handleModeChange("manual")}
-                    />
+                    <Checkbox checked={isManual} onChange={() => handleModeChange("manual")} />
                     <span className="ml-2 text-gray-700 font-semibold">Mode Manual</span>
                 </label>
-
                 <label className="flex items-center cursor-pointer select-none">
-                    <Checkbox
-                        checked={!isManual}
-                        onChange={() => handleModeChange("random")}
-                    />
+                    <Checkbox checked={!isManual} onChange={() => handleModeChange("random")} />
                     <span className="ml-2 text-gray-700 font-semibold">Mode Random</span>
                 </label>
             </div>
 
-            {/* 3. KONTEN PANEL */}
             <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
-                
-                {/* --- UI MANUAL --- */}
+                {/* UI MANUAL */}
                 {isManual && (
                     <div className="space-y-4">
                         <div>
-                            <InputLabel value="Cari Kupon Manual" />
+                            <InputLabel value="Cari Kupon" />
                             <div className="flex mt-1">
                                 <TextInput
                                     value={couponCode}
@@ -303,20 +250,17 @@ export default function PanelUndi({
                                     className="flex-grow rounded-l-md"
                                     placeholder="Masukkan kode kupon..."
                                 />
-                                <SecondaryButton onClick={handleCheckCoupon} className="rounded-l-none h-10 border-l-0">
-                                    Cek
-                                </SecondaryButton>
+                                <SecondaryButton onClick={handleCheckCoupon} className="rounded-l-none">Cek</SecondaryButton>
                             </div>
                             {couponError && <InputError message={couponError} className="mt-1" />}
                         </div>
-
                         {couponInfo && (
-                            <div className="mt-2 p-3 bg-white border border-green-300 rounded-md flex justify-between items-center shadow-sm">
+                            <div className="mt-2 p-3 bg-white border border-green-300 rounded-md flex justify-between items-center">
                                 <div>
                                     <p className="font-bold text-gray-800">{couponInfo.full_name}</p>
                                     <p className="text-xs text-gray-500 font-mono">{couponCode}</p>
                                 </div>
-                                <PrimaryButton onClick={addManualWinner} className="text-xs h-8" disabled={!selectedPrizeId}>
+                                <PrimaryButton onClick={addManualWinner} className="text-xs" disabled={realTimeRemaining <= 0}>
                                     + Tambah
                                 </PrimaryButton>
                             </div>
@@ -324,64 +268,60 @@ export default function PanelUndi({
                     </div>
                 )}
 
-                {/* --- UI RANDOM --- */}
+                {/* UI RANDOM */}
                 {!isManual && (
                     <div className="space-y-4">
-                        <p className="text-sm text-gray-600">
-                            Sistem akan memilih pemenang secara acak untuk mengisi sisa kuota.
-                        </p>
                         <div className="flex items-end gap-2">
                             <div className="flex-grow">
-                                <InputLabel value={`Jumlah yang diundi (Max: ${winnersRemaining})`} />
+                                <InputLabel value={`Jumlah (Max: ${realTimeRemaining})`} />
                                 <TextInput
                                     type="number"
                                     value={randomAmount}
                                     onChange={(e) => setRandomAmount(e.target.value)}
                                     className="w-full mt-1"
                                     min="1"
-                                    max={winnersRemaining}
+                                    max={realTimeRemaining}
                                 />
                             </div>
-                            <PrimaryButton onClick={handleGenerateRandom} disabled={!selectedPrizeId || winnersRemaining === 0}>
-                                Generate Random
+                            <PrimaryButton onClick={handleGenerateRandom} disabled={!selectedPrizeId || realTimeRemaining <= 0}>
+                                Generate
                             </PrimaryButton>
                         </div>
                     </div>
                 )}
             </div>
 
-            {/* 4. PREVIEW DAFTAR PEMENANG SEMENTARA (Wajib ada biar admin tau siapa aja yg udah masuk) */}
+            {/* Preview Pemenang Baru */}
             {winners.length > 0 && (
                 <div className="mt-6">
-                    <h4 className="text-sm font-bold text-gray-700 mb-2">Daftar Pemenang Sementara:</h4>
-                    <ul className="space-y-2 max-h-40 overflow-y-auto border rounded-md p-2 bg-gray-50">
+                    <h4 className="text-sm font-bold text-gray-700 mb-2">Pemenang Baru (Belum Disimpan):</h4>
+                    <ul className="space-y-2 max-h-40 overflow-y-auto border rounded-md p-2 bg-yellow-50">
                         {winners.map((w, i) => (
                             <li key={i} className="flex justify-between items-center p-2 bg-white border rounded shadow-sm text-sm">
                                 <div>
                                     <span className="font-bold block text-gray-800">{w.full_name}</span>
-                                    <span className="text-xs text-gray-500">{w.coupon_code} • <span className="text-blue-600 font-semibold">{w.source === 'manual' ? 'Manual' : 'Random'}</span></span>
+                                    <span className="text-xs text-gray-500">{w.coupon_code} • {w.source}</span>
                                 </div>
-                                <button onClick={() => removeWinner(i)} className="text-red-500 hover:text-red-700 font-bold px-2">
-                                    &times;
-                                </button>
+                                <button onClick={() => removeWinner(i)} className="text-red-500 font-bold px-2">&times;</button>
                             </li>
                         ))}
                     </ul>
                 </div>
             )}
 
-            {/* 5. FOOTER */}
-            <div className="mt-6 pt-4 border-t text-right">
+            {/* Footer */}
+            <div className="mt-6 border-t pt-4">
                 <PrimaryButton
                     onClick={handleStoreWinners}
-                    className="w-full justify-center h-10 bg-green-600 hover:bg-green-700 disabled:opacity-50"
-                    disabled={winnersRemaining > 0}
+                    className="w-full justify-center bg-green-600 hover:bg-green-700"
+                    disabled={winners.length === 0}
                 >
-                    {winnersRemaining > 0 
-                        ? `Lengkapi ${winnersRemaining} Pemenang Lagi` 
-                        : "SIMPAN SEMUA KE DATABASE"
-                    }
+                    Simpan {winners.length} Pemenang ke Database
                 </PrimaryButton>
+                {/* Tampilkan status kalau sudah selesai */}
+                {realTimeRemaining === 0 && winners.length === 0 && (
+                    <p className="text-center text-green-600 font-bold mt-2">Semua kuota pemenang sudah terisi!</p>
+                )}
             </div>
         </div>
     );
