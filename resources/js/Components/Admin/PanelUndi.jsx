@@ -145,7 +145,12 @@ export default function PanelUndi({
             })
             .catch((err) => {
                 Swal.close();
-                Swal.fire("Error", "Gagal mengundi random.", "error");
+                const errorMessage = err.response?.data?.message || err.message || "Gagal mengundi random.";
+                Swal.fire({
+                    icon: "error",
+                    title: "Error",
+                    text: errorMessage
+                });
             });
     };
 

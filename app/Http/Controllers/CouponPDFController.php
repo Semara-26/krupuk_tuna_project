@@ -15,7 +15,6 @@ class CouponPDFController extends Controller
     //
     public function createFile($coupon_codes, $title)
     {
-        $today = Carbon::now()->toDateString();
         return Pdf::view('pdf.coupons-pdf', ['coupon_codes' => $coupon_codes])
             ->format('a4')
             ->download("$title.pdf");
