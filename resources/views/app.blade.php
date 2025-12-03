@@ -6,7 +6,7 @@
 
         <title inertia>{{ config('app.name', 'Laravel') }}</title>
 
-        <link rel="icon" type="image/png" href="{{ asset('images/favicon.jpg') }}">
+        <link rel="icon" type="image/png" href="{{ asset('/images/favicon.png') }}">
 
         <!-- Fonts -->
         <link rel="preconnect" href="https://fonts.bunny.net">
@@ -47,7 +47,7 @@
     </head>
     <body class="font-sans antialiased">
         <div id="splash-screen">
-        <img src="/images/logo1.png" alt="Logo Krupuk Tuna" />
+        <img src="/images/DESIGN LOGO RAJATUNA.png" alt="Logo Kerupuk Tuna" />
     </div>
         @inertia
     </body>

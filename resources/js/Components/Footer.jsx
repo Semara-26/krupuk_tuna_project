@@ -9,7 +9,7 @@ export default function Footer() {
                     {/* Logo */}
                     <Link href="/">
                         {/* Kita gunakan versi logo yang berbeda agar kontras dengan latar gelap */}
-                        <ApplicationLogo className="h-12 w-auto" />
+                        <ApplicationLogo className="h-20 w-auto" />
                     </Link>
 
                     {/* Navigasi Footer */}
@@ -32,7 +32,7 @@ export default function Footer() {
                 <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
                     {/* Copyright */}
                     <p className="text-center text-sm text-gray-400">
-                        &copy; {new Date().getFullYear()} Krupuk Tuna. All Rights Reserved.
+                        &copy; {new Date().getFullYear()} Raja Tuna. All Rights Reserved.
                     </p>
                 </div>
             </div>
