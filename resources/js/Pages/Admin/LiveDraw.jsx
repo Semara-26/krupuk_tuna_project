@@ -123,9 +123,9 @@ export default function LiveDraw({ event, prizes, winners }) {
                 {/* Logo kiri */}
                 <div className="flex items-center gap-4">
                     <img
-                        src="/images/logo1.png"
+                        src="/images/DESIGN LOGO RAJATUNA.png"
                         alt="Logo"
-                        className="h-12 md:h-16 bg-white rounded-lg p-2 shadow-lg"
+                        className="h-12 md:h-16 rounded-lg p-2 shadow-lg"
                     />
                 </div>
 
