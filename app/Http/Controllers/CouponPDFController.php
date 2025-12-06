@@ -4,20 +4,16 @@ namespace App\Http\Controllers;
 
 use App\Models\Coupon;
 use App\Models\CouponFile;
-use Spatie\LaravelPdf\Facades\Pdf;
-use Carbon\Carbon;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-use Spatie\Browsershot\Browsershot;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class CouponPDFController extends Controller
 {
-    //
     public function createFile($coupon_codes, $title)
     {
-        return Pdf::view('pdf.coupons-pdf', ['coupon_codes' => $coupon_codes])
-            ->format('a4')
-            ->download("$title.pdf");
+        $pdf = Pdf::loadView('pdf.coupons-pdf', ['coupon_codes' => $coupon_codes])
+            ->setPaper('a4', 'portrait');
+        
+        return $pdf->download("$title.pdf");
     }
 
     public function downloadExistingFile($id)
@@ -28,8 +24,10 @@ class CouponPDFController extends Controller
         $coupon_codes = $res->map(function($c){
             return ['id'=>$c->id];
         })->toArray();
-        return Pdf::view('pdf.coupons-pdf', ['coupon_codes' => $coupon_codes])
-            ->format('a4')
-            ->download("$title.pdf");
+        
+        $pdf = Pdf::loadView('pdf.coupons-pdf', ['coupon_codes' => $coupon_codes])
+            ->setPaper('a4', 'portrait');
+            
+        return $pdf->download("$title.pdf");
     }
 }

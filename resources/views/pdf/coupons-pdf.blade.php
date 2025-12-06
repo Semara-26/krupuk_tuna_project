@@ -4,13 +4,6 @@
 <meta charset="utf-8" />
 <title>Template Cetak Kupon</title>
 <style>
-    :root {
-        --gap-horizontal: 8mm;  /* Gap between columns */
-        --gap-vertical: 2mm;    /* Gap between rows */
-        --coupon-height: 35mm;  /* Height of each coupon */
-        --border-radius: 8px;   /* Corner roundness */
-    }
-
     @page {
         size: A4 portrait;
         margin: 10mm;
@@ -19,36 +12,37 @@
     body {
         font-family: Arial, sans-serif;
         margin: 0;
-        padding: 10mm;
+        padding: 0;
         background-color: #fff;
     }
 
     .page {
-        display: flex;
-        flex-direction: row;
-        flex-wrap: wrap;
-        justify-content: space-between;
-        align-content: flex-start;
+        width: 100%;
         page-break-after: always;
-        gap: var(--gap-vertical) var(--gap-horizontal);
+    }
+
+    .page:last-child {
+        page-break-after: auto;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 8px 2px;
     }
 
     .coupon {
-        width: calc(50% - (var(--gap-horizontal) / 2));
-        height: var(--coupon-height);
-        border: 1px solid #00ff00; /* bright green outline */
-        border-radius: var(--border-radius);
-        margin-bottom: 0;
-        overflow: hidden;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        box-sizing: border-box;
+        width: 48%;
+        height: 35mm;
+        border: 2px solid #00ff00;
+        border-radius: 8px;
+        text-align: center;
+        vertical-align: middle;
         background: #fff;
+        padding: 4px;
     }
 
     .coupon-content {
-        text-align: center;
         padding: 4px 8px;
     }
 
@@ -61,14 +55,14 @@
     .code {
         font-size: 18px;
         font-weight: bold;
-        margin-bottom: 3px;
+        margin: 3px 0;
     }
 
     .divider {
         width: 100%;
         height: 1px;
         background: #000;
-        margin: 2px 0 4px 0;
+        margin: 2px auto 4px auto;
     }
 
     .info {
@@ -84,27 +78,47 @@
         margin-top: 2px;
     }
 
-    .empty { visibility: hidden; }
+    .empty {
+        visibility: hidden;
+    }
 </style>
 </head>
 <body>
 
-@foreach (array_chunk($coupon_codes, 12) as $page)
+@foreach (array_chunk($coupon_codes, 12) as $pageIndex => $page)
     <div class="page">
-        @foreach ($page as $coupon)
-            <div class="coupon">
-                <div class="coupon-content">
-                    <div class="label">Kode Kupon</div>
-                    <div class="code">{{ $coupon['id'] }}</div>
-                    <div class="divider"></div>
-                    <div class="info">Masukkan kode kupon di website resmi kami:</div>
-                    <div class="website">www.rajatuna.com</div>
-                </div>
-            </div>
-        @endforeach
-        @for ($i = count($page); $i < 12; $i++)
-            <div class="coupon empty"></div>
-        @endfor
+        <table>
+            @foreach (array_chunk($page, 2) as $row)
+                <tr>
+                    @foreach ($row as $coupon)
+                        <td class="coupon">
+                            <div class="coupon-content">
+                                <div class="label">Kode Kupon</div>
+                                <div class="code">{{ $coupon['id'] }}</div>
+                                <div class="divider"></div>
+                                <div class="info">Masukkan kode kupon di website resmi kami:</div>
+                                <div class="website">www.rajatuna.com</div>
+                            </div>
+                        </td>
+                    @endforeach
+                    @if (count($row) < 2)
+                        <td class="coupon empty"></td>
+                    @endif
+                </tr>
+            @endforeach
+            
+            @php
+                $remainingCoupons = 12 - count($page);
+                $remainingRows = ceil($remainingCoupons / 2);
+            @endphp
+            
+            @for ($i = 0; $i < $remainingRows; $i++)
+                <tr>
+                    <td class="coupon empty"></td>
+                    <td class="coupon empty"></td>
+                </tr>
+            @endfor
+        </table>
     </div>
 @endforeach
 

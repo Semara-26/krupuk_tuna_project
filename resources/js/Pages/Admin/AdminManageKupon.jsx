@@ -52,11 +52,63 @@ export default function AdminManageCoupon({ auth, couponFiles }) {
                     window.location.reload();
                 });
             })
+            .catch((error) => {
+                Swal.close();
 
-            .catch(() => {
+                console.error("[CREATE COUPON ERROR]", error);
+
+                let errorMessage = "Terjadi kesalahan saat membuat kupon.";
+                let errorDetail = "";
+
+                // Handle different error scenarios
+                if (error.response) {
+                    // Server responded with error status
+                    const status = error.response.status;
+                    
+                    // Try to read error message from blob response
+                    if (error.response.data instanceof Blob) {
+                        error.response.data.text().then((text) => {
+                            try {
+                                const errorData = JSON.parse(text);
+                                const detailText = errorData.message || errorData.data || text;
+                                
+                                Swal.fire({
+                                    icon: "error",
+                                    title: "Gagal membuat kupon!",
+                                    html: `<p><strong>Status:</strong> ${status}</p><p>${detailText}</p>`,
+                                    confirmButtonText: "OK",
+                                });
+                            } catch (e) {
+                                Swal.fire({
+                                    icon: "error",
+                                    title: "Gagal membuat kupon!",
+                                    html: `<p><strong>Status:</strong> ${status}</p><p>${text}</p>`,
+                                    confirmButtonText: "OK",
+                                });
+                            }
+                        });
+                        return;
+                    }
+                    
+                    errorMessage = `Error ${status}: ${error.response.statusText}`;
+                    errorDetail = error.response.data?.message || error.response.data?.data || "";
+                } else if (error.request) {
+                    // Request made but no response
+                    errorMessage = "Tidak ada respons dari server.";
+                    errorDetail = "Periksa koneksi internet Anda.";
+                } else {
+                    // Error in setting up request
+                    errorMessage = "Terjadi kesalahan.";
+                    errorDetail = error.message;
+                }
+
                 Swal.fire({
                     icon: "error",
                     title: "Gagal membuat kupon!",
+                    html: errorDetail 
+                        ? `<p>${errorMessage}</p><p class="text-sm text-gray-600 mt-2">${errorDetail}</p>`
+                        : errorMessage,
+                    confirmButtonText: "OK",
                 });
             });
     };
@@ -121,10 +173,60 @@ export default function AdminManageCoupon({ auth, couponFiles }) {
             .catch((error) => {
                 Swal.close();
 
+                console.error("[DOWNLOAD ERROR]", error);
+
+                let errorMessage = "Gagal mendownload file!";
+                let errorDetail = "";
+
+                // Handle different error scenarios
+                if (error.response) {
+                    const status = error.response.status;
+                    
+                    // Try to read error message from blob response
+                    if (error.response.data instanceof Blob) {
+                        error.response.data.text().then((text) => {
+                            try {
+                                const errorData = JSON.parse(text);
+                                const detailText = errorData.message || errorData.data || text;
+                                
+                                Swal.fire({
+                                    icon: "error",
+                                    title: "Gagal mendownload file!",
+                                    html: `<p><strong>Status:</strong> ${status}</p><p>${detailText}</p>`,
+                                    footer: '<span class="text-sm text-gray-500">Cek console untuk detail lengkap</span>',
+                                    confirmButtonText: "OK",
+                                });
+                            } catch (e) {
+                                Swal.fire({
+                                    icon: "error",
+                                    title: "Gagal mendownload file!",
+                                    html: `<p><strong>Status:</strong> ${status}</p><p>${text}</p>`,
+                                    footer: '<span class="text-sm text-gray-500">Cek console untuk detail lengkap</span>',
+                                    confirmButtonText: "OK",
+                                });
+                            }
+                        });
+                        return;
+                    }
+                    
+                    errorMessage = `Error ${status}: ${error.response.statusText}`;
+                    errorDetail = error.response.data?.message || error.response.data?.data || "";
+                } else if (error.request) {
+                    errorMessage = "Tidak ada respons dari server.";
+                    errorDetail = "Periksa koneksi internet Anda.";
+                } else {
+                    errorMessage = "Terjadi kesalahan saat mendownload.";
+                    errorDetail = error.message;
+                }
+
                 Swal.fire({
                     icon: "error",
-                    title: "Gagal mendownload file!",
-                    text: "Silakan cek console untuk detail error.",
+                    title: errorMessage,
+                    html: errorDetail 
+                        ? `<p class="text-sm text-gray-600 mt-2">${errorDetail}</p>`
+                        : null,
+                    footer: '<span class="text-sm text-gray-500">Cek console untuk detail lengkap</span>',
+                    confirmButtonText: "OK",
                 });
             });
     };

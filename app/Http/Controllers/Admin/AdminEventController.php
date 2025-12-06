@@ -315,6 +315,7 @@ class AdminEventController extends Controller
             }
             $res = $event_data->delete();
             Cache::forget("coupon_data");
+            Cache::forget("winners");
             return response()->json([
                 "code" => 200,
                 "message" => "success",
