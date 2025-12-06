@@ -183,7 +183,11 @@ export default function Welcome({ auth, terakhirInput }) {
                 onClose={closeModal}
                 quantity={quantity}
             /> */}
-            <KuponModal show={showKuponModal} onClose={closeKuponModal} terakhirInput={terakhirInput}/>
+            <KuponModal
+                show={showKuponModal}
+                onClose={closeKuponModal}
+                terakhirInput={terakhirInput}
+            />
         </AuthenticatedLayout>
     );
 }
