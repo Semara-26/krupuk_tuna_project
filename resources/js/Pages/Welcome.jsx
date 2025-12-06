@@ -40,14 +40,14 @@ export default function Welcome({ auth, terakhirInput }) {
     };
 
     const bannerImages = [
-        "/images/ikan-home.avif",
-        "/images/banner2.jpg",
-        "/images/banner4.png",
+        "/images/image.png",
+        "/images/image.png",
+        "/images/image.png",
     ];
 
     return (
         <AuthenticatedLayout auth={auth}>
-            <Head title="Selamat Datang di Kerupuk Tuna" />
+            <Head title="Raja Tuna 𓆝 𓆟 𓆞 𓆝 𓆟" />
             <div className="relative">
                 <Swiper
                     modules={[Navigation, Autoplay, Pagination]}
