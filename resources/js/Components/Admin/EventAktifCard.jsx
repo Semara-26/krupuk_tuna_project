@@ -42,7 +42,7 @@ export default function EventAktifCard({ event, onEdit, onDelete, onFinish }) {
 
             <div className="mt-6 mb-3">
                 <a 
-                    href={route('admin.live-draw', { event_id: event.id })} 
+                    href={route('live-draw.index')} // PENTING: Arahkan ke route baru tanpa ID
                     target="_blank" 
                     rel="noopener noreferrer"
                     className="block w-full text-center px-4 py-3 bg-blue-600 text-white font-bold rounded-md hover:bg-blue-700 shadow-md transition-all hover:shadow-lg"

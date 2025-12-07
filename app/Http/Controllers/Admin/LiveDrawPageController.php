@@ -8,27 +8,51 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
+use App\Models\Events; 
+use Illuminate\Support\Facades\Auth; 
 
 use function Symfony\Component\Clock\now;
 
 class LiveDrawPageController extends Controller
 {
-    //
-    public function index($event_id)
+    // function yang lama tak comment dulu
+    // public function index($event_id)
+    // {
+    //     if (Cache::has("winners")) {
+    //         $winners = Cache::get("winners");
+    //     } else {
+    //         $winners = DB::table("winners as w")->select("w.coupon_code", "cc.full_name", "w.prize_types_id")
+    //             ->join("coupon_confirmations as cc", "w.coupon_code", "cc.coupon_code")
+    //             ->where("w.events_id", $event_id)
+    //             ->get();
+    //     }
+    //     $event_data = DB::table("events")->select("title")->where('id', "$event_id")->first();
+    //     $prizes = DB::table("prizes")->select("id", "prize_name", "qty", "prize_types_id")->where("events_id", $event_id)->get();
+
+
+    //     return Inertia::render("Admin/LiveDraw", ["event" => ["id" => $event_id, "title" => $event_data->title], "prizes" => $prizes, "winners" => $winners ?? []]);
+    // }
+
+    public function indexPublic()
     {
-        if (Cache::has("winners")) {
-            $winners = Cache::get("winners");
-        } else {
-            $winners = DB::table("winners as w")->select("w.coupon_code", "cc.full_name", "w.prize_types_id")
-                ->join("coupon_confirmations as cc", "w.coupon_code", "cc.coupon_code")
-                ->where("w.events_id", $event_id)
-                ->get();
-        }
-        $event_data = DB::table("events")->select("title")->where('id', "$event_id")->first();
-        $prizes = DB::table("prizes")->select("id", "prize_name", "qty", "prize_types_id")->where("events_id", $event_id)->get();
+        // 1. Cari Event yang sedang AKTIF
+        // Asumsi: status '1' atau '0' menandakan aktif (sesuaikan dengan logic databasemu)
+        // Kita ambil event terakhir yang dibuat atau yang statusnya aktif
+        $activeEvent = Events::with('prizes')
+                        ->where('status', '0') // Misal 0 itu aktif (sesuaikan!)
+                        ->latest()
+                        ->first();
 
+        // 2. Cek apakah yang akses adalah Admin?
+        $isAdmin = Auth::guard('admin')->check();
 
-        return Inertia::render("Admin/LiveDraw", ["event" => ["id" => $event_id, "title" => $event_data->title], "prizes" => $prizes, "winners" => $winners ?? []]);
+        // 3. Render halaman Inertia
+        return Inertia::render('Admin/LiveDraw', [
+            'event' => $activeEvent,
+            // Jika event ada, kirim prizes, jika tidak kirim array kosong
+            'prizes' => $activeEvent ? $activeEvent->prizes : [],
+            'isAdmin' => $isAdmin
+        ]);
     }
 
     public function storeCache(Request $request)
@@ -36,4 +60,6 @@ class LiveDrawPageController extends Controller
         Cache::forget("winners");
         Cache::put("winners", $request->winners, Carbon::now()->addMinutes(30));
     }
+
+
 }

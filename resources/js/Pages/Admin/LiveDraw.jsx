@@ -1,136 +1,203 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Head } from "@inertiajs/react";
-import PrimaryButton from "@/Components/PrimaryButton";
+import { Head, usePage } from "@inertiajs/react"; // usePage buat cek auth
 import ReactConfetti from "react-confetti";
 import Swal from "sweetalert2";
 import axios from "axios";
 
-export default function LiveDraw({ event, prizes, winners }) {
+export default function LiveDraw({ event, prizes, isAdmin }) {
+    // Ambil info user login dari Inertia (Shared Props)
+    // const { auth } = usePage().props;
+    // const isAdmin = auth?.user?.role === 'admin' || auth?.admin; // Sesuaikan logic cek adminmu
+
+    // --- CONFIG STATE (Poin 5) ---
+    const [animDuration, setAnimDuration] = useState(3000); // Lama acak angka (ms)
+    const [intermissionDelay, setIntermissionDelay] = useState(3000); // Jeda antar pemenang (ms)
+
     // --- STATE UTAMA ---
-    const [selectedPrizeType, setSelectedPrizeType] = useState(prizes[0]?.prize_types_id || "");
+    const [selectedPrizeType, setSelectedPrizeType] = useState(
+        prizes[0]?.prize_types_id || ""
+    );
     const [isRolling, setIsRolling] = useState(false);
     const [displayNumber, setDisplayNumber] = useState("XXXXXXXX");
     const [currentWinner, setCurrentWinner] = useState(null);
     const [showConfetti, setShowConfetti] = useState(false);
-    
-    // STATE BARU: Simpan array winners, akan dikurangi setiap kali ada pemenang
-    const [remainingWinners, setRemainingWinners] = useState(winners || []);
 
+    // State buat nyimpen ID pemenang terakhir biar ga animasi ulang
+    const lastWinnerIdRef = useRef(null);
     const rollingInterval = useRef(null);
 
-    // --- FUNGSI: HITUNG SISA QTY PER PRIZE TYPE ---
-    const getRemainingQty = (prizeTypeId) => {
-        return remainingWinners.filter(w => w.prize_types_id == prizeTypeId).length;
-    };
+    // --- VISUAL EFFECT HELPERS ---
+    const startVisualRolling = () => {
+        setIsRolling(true);
+        setShowConfetti(false);
+        setCurrentWinner(null);
 
-    // --- FUNGSI: MENGACAK NOMOR (EFEK VISUAL) ---
-    const startRollingEffect = () => {
+        if (rollingInterval.current) clearInterval(rollingInterval.current);
+
         rollingInterval.current = setInterval(() => {
-            // Generate 8 random characters (numbers + letters, excluding I and U)
-            const chars = '0123456789ABCDEFGHJKLMNOPQRSTVWXYZ'; // Removed I and U
-            let randomCode = '';
-            for (let i = 0; i < 8; i++) {
-                randomCode += chars.charAt(Math.floor(Math.random() * chars.length));
-            }
+            const chars = "0123456789ABCDEFGHJKLMNOPQRSTVWXYZ";
+            let randomCode = "";
+            for (let i = 0; i < 8; i++)
+                randomCode += chars.charAt(
+                    Math.floor(Math.random() * chars.length)
+                );
             setDisplayNumber(randomCode);
         }, 50);
     };
 
-    // --- FUNGSI UTAMA: TOMBOL "MULAI ACAK" ---
-    const handleStartDraw = async () => {
-        if (!selectedPrizeType) {
-            Swal.fire(
-                "Pilih Hadiah",
-                "Silakan pilih hadiah yang akan diundi dulu.",
-                "warning"
-            );
-            return;
-        }
+    const stopVisualRolling = (winnerData) => {
+        clearInterval(rollingInterval.current);
+        setDisplayNumber(winnerData.coupon_code); // Pastikan fieldnya 'coupon_code'
+        setCurrentWinner(winnerData);
+        setIsRolling(false);
+        setShowConfetti(true);
+        setTimeout(() => setShowConfetti(false), 5000);
+    };
 
-        // Filter winners berdasarkan prize_types_id yang dipilih
-        const filteredWinners = remainingWinners.filter(
-            w => w.prize_types_id == selectedPrizeType
-        );
+    // --- POIN 3: MIRRORING UTK USER (POLLING) ---
+    useEffect(() => {
+        // Kalau Admin, gak perlu polling (karena dia yang nge-trigger)
+        if (isAdmin) return;
 
-        // Cek apakah masih ada pemenang tersisa
-        if (filteredWinners.length === 0) {
-            Swal.fire(
-                "Tidak Ada Pemenang",
-                "Semua pemenang untuk hadiah ini sudah diundi.",
-                "info"
-            );
-            return;
-        }
+        const pollInterval = setInterval(async () => {
+            try {
+                const res = await axios.get(
+                    route("api.livedraw.status", { event_id: event.id })
+                );
+                const data = res.data;
+                const winner = data.latest_winner;
 
-        // Ambil pemenang pertama dari array (FIFO)
-        const nextWinner = filteredWinners[0];
+                // Logic: Jika ada pemenang baru yang beda dari sebelumnya
+                if (winner && winner.id !== lastWinnerIdRef.current) {
+                    lastWinnerIdRef.current = winner.id;
 
-        // 1. Mulai animasi visual
-        setIsRolling(true);
-        setCurrentWinner(null);
-        setShowConfetti(false);
-        startRollingEffect();
+                    // Mainkan animasi seolah-olah real time
+                    startVisualRolling();
 
-        // 2. Simulasi delay (seolah-olah backend sedang proses)
-        await new Promise((resolve) => setTimeout(resolve, 2000));
+                    // Tunggu sebentar (simulasi durasi animasi) lalu munculkan
+                    setTimeout(() => {
+                        stopVisualRolling(winner);
+                    }, 3000);
+                }
+            } catch (error) {
+                console.error("Polling error:", error);
+            }
+        }, 3000); // Cek tiap 3 detik
 
-        // 3. Stop animasi dan tampilkan pemenang
-        stopRollingEffect(nextWinner);
+        return () => clearInterval(pollInterval);
+    }, [event.id, isAdmin]);
 
-        // 4. Hapus pemenang dari array
-        const updatedWinners = remainingWinners.filter(
-            w => w.coupon_code !== nextWinner.coupon_code
-        );
-        setRemainingWinners(updatedWinners);
+    // --- POIN 4: FUNGSI ADMIN AUTO LOOP ---
+    const handleStartAutoDraw = async () => {
+        if (!selectedPrizeType) return Swal.fire("Pilih Hadiah Dulu");
 
-        // 5. Simpan ke cache di backend
-        try {
-            // Pastikan selalu kirim array, bahkan jika kosong
-            await axios.post(route('admin.winner.store-left'), {
-                event_id: event.id,
-                winners: updatedWinners.length > 0 ? updatedWinners : []
-            });
-        } catch (error) {
-            console.error('Gagal menyimpan ke cache:', error);
+        // Konfirmasi awal
+        const result = await Swal.fire({
+            title: "Mulai Pengundian Otomatis?",
+            text: `Sistem akan mengundi satu per satu dengan jeda ${
+                intermissionDelay / 1000
+            } detik.`,
+            icon: "question",
+            showCancelButton: true,
+            confirmButtonText: "Gas, Mulai!",
+            cancelButtonText: "Ga Jadi Deh",
+        });
+
+        if (!result.isConfirmed) return;
+
+        let keepDrawing = true;
+
+        // LOOPING SAMPAI HABIS / ERROR
+        while (keepDrawing) {
+            try {
+                // 1. Mulai Visual
+                startVisualRolling();
+
+                // --- PERBAIKAN LOGIC PARALEL (Biar sesuai request temenmu) ---
+                // Kita jalanin Timer Animasi & Request API secara BERSAMAAN
+                // Jadi API di-hit saat animasi sedang jalan.
+
+                const animationPromise = new Promise((r) =>
+                    setTimeout(r, animDuration)
+                );
+
+                // Request API (langsung jalan, gak nunggu delay dulu)
+                const apiPromise = axios.post(route("admin.draw-one"), {
+                    event_id: event.id,
+                    prize_types_id: selectedPrizeType,
+                });
+
+                // Tunggu keduanya selesai (paling lambat)
+                const [_, res] = await Promise.all([
+                    animationPromise,
+                    apiPromise,
+                ]);
+                // -------------------------------------------------------------
+
+                // 3. Tampilkan Pemenang
+                const newWinner = res.data.winner;
+                stopVisualRolling(newWinner);
+                lastWinnerIdRef.current = newWinner.id;
+
+                // 4. Cek Sisa (Dari response backend)
+                if (res.data.remaining <= 0) {
+                    keepDrawing = false; // Stop loop
+                    await Swal.fire(
+                        "Selesai!",
+                        "Semua hadiah untuk kategori ini sudah habis.",
+                        "success"
+                    );
+                    break;
+                }
+
+                // 5. Delay Intermission (Jeda antar undian)
+                await new Promise((r) => setTimeout(r, intermissionDelay));
+            } catch (error) {
+                console.log("Error response:", error.response);
+
+                // 1. Matikan Loop (Wajib)
+                keepDrawing = false;
+
+                // 2. Siapkan Pesan
+                const errorMessage =
+                    error.response?.data?.message ||
+                    "Terjadi kesalahan sistem.";
+                const isDataEmpty = error.response?.status === 404;
+
+                // 3. Tampilkan Popup & Reload setelah klik OK
+                Swal.fire({
+                    icon: isDataEmpty ? "warning" : "error",
+                    title: isDataEmpty ? "Perhatian" : "Gagal",
+                    text: errorMessage,
+                    confirmButtonText: "OK, Reset",
+                }).then((result) => {
+                    // Kode ini baru jalan SETELAH admin klik tombol OK
+                    if (result.isConfirmed || result.isDismissed) {
+                        window.location.reload(); // Refresh halaman biar bersih
+                    }
+                });
+            }
         }
     };
 
-    // --- FUNGSI: STOP ANIMASI & TAMPILKAN PEMENANG ---
-    const stopRollingEffect = (winnerData) => {
-        setTimeout(() => {
-            clearInterval(rollingInterval.current);
-
-            setDisplayNumber(winnerData.coupon_code);
-            setCurrentWinner(winnerData);
-            setIsRolling(false);
-            setShowConfetti(true);
-
-            setTimeout(() => setShowConfetti(false), 7000);
-        }, 1000);
-    };
-
-    // Cari nama hadiah yang lagi dipilih
-    const currentPrizeObj = prizes.find((p) => p.prize_types_id == selectedPrizeType);
+    // Helper cari nama hadiah
+    const currentPrizeObj = prizes.find(
+        (p) => p.prize_types_id == selectedPrizeType
+    );
 
     return (
         <div className="min-h-screen bg-slate-900 flex flex-col items-center relative overflow-hidden font-sans">
             <Head title={`Live Draw - ${event.title}`} />
-
             {showConfetti && <ReactConfetti recycle={true} />}
 
-            {/* HEADER */}
+            {/* HEADER & LOGO (Sama kayak code lama mu) */}
             <div className="w-full p-6 flex items-center z-20 relative">
-                {/* Logo kiri */}
-                <div className="flex items-center gap-4">
-                    <img
-                        src="/images/DESIGN LOGO RAJATUNA.png"
-                        alt="Logo"
-                        className="h-12 md:h-16 rounded-lg p-2 shadow-lg"
-                    />
-                </div>
-
-                {/* Judul Tengah (Absolute centered) */}
-                <h1 className="hidden md:block absolute left-1/2 transform -translate-x-1/2 text-2xl md:text-4xl font-black text-yellow-400 uppercase tracking-widest drop-shadow-md">
+                <img
+                    src="/images/DESIGN LOGO RAJATUNA.png"
+                    alt="Logo"
+                    className="h-16 rounded-lg p-2 "
+                />
+                <h1 className="hidden md:block absolute left-1/2 transform -translate-x-1/2 text-3xl font-black text-yellow-400 uppercase tracking-widest">
                     {event.title}
                 </h1>
             </div>
@@ -138,27 +205,22 @@ export default function LiveDraw({ event, prizes, winners }) {
             {/* KONTEN TENGAH */}
             <div className="flex-grow flex flex-col items-center justify-center w-full max-w-6xl px-4 z-10 -mt-10">
                 {/* 1. Judul Hadiah */}
-                <div className="mb-6 md:mb-10 text-center">
-                    <p className="text-slate-400 text-sm md:text-xl mb-2 uppercase tracking-[0.2em] font-semibold">
+                <div className="mb-10 text-center">
+                    <p className="text-slate-400 text-xl mb-2 uppercase tracking-[0.2em]">
                         Memperebutkan Hadiah:
                     </p>
-                    <div className="inline-block bg-gradient-to-r from-yellow-400 to-yellow-600 text-slate-900 px-6 md:px-12 py-2 md:py-4 rounded-full text-xl md:text-4xl font-black shadow-2xl transform hover:scale-105 transition-transform duration-300">
-                        {currentPrizeObj
-                            ? currentPrizeObj.prize_name
-                            : "Pilih Hadiah..."}
+                    <div className="inline-block bg-gradient-to-r from-yellow-400 to-yellow-600 text-slate-900 px-12 py-4 rounded-full text-4xl font-black shadow-2xl">
+                        {currentPrizeObj ? currentPrizeObj.prize_name : "..."}
                     </div>
                 </div>
 
-                {/* 2. Kotak Nomor Kupon */}
-                <div className="bg-white text-slate-900 rounded-3xl p-8 md:p-16 shadow-[0_0_50px_rgba(255,255,255,0.1)] border-8 border-slate-700 mb-8 w-full max-w-4xl mx-auto transform transition-all duration-300 relative overflow-hidden group">
-                    <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-slate-100 to-transparent opacity-0 group-hover:opacity-30 transition-opacity duration-500"></div>
-
+                {/* 2. Kotak Nomor */}
+                <div className="bg-white text-slate-900 rounded-3xl p-16 shadow-[0_0_50px_rgba(255,255,255,0.1)] border-8 border-slate-700 mb-8 w-full max-w-4xl mx-auto relative overflow-hidden">
                     <div
-                        className={`font-mono font-black tracking-widest text-center transition-all duration-100 
-                        ${
+                        className={`font-mono font-black tracking-widest text-center transition-all ${
                             isRolling
-                                ? "text-5xl md:text-8xl opacity-50 blur-[2px]"
-                                : "text-6xl md:text-9xl scale-110 text-slate-800"
+                                ? "text-8xl opacity-50 blur-[2px]"
+                                : "text-9xl scale-110 text-slate-800"
                         }`}
                     >
                         {displayNumber}
@@ -167,69 +229,102 @@ export default function LiveDraw({ event, prizes, winners }) {
 
                 {/* 3. Data Pemenang */}
                 {currentWinner && !isRolling && (
-                    <div className="bg-green-600 bg-opacity-90 backdrop-blur-sm border-2 border-green-400 rounded-2xl p-6 md:p-8 mb-8 text-center animate-bounce-in shadow-2xl w-full max-w-2xl">
-                        <h2 className="text-xl md:text-2xl font-bold text-green-100 mb-2 uppercase tracking-wider">
+                    <div className="bg-green-600 border-4 border-green-400 rounded-2xl p-8 mb-8 text-center animate-bounce-in shadow-2xl w-full max-w-2xl text-white">
+                        <h2 className="text-2xl font-bold mb-2 uppercase">
                             Selamat Kepada
                         </h2>
-                        <p className="text-3xl md:text-5xl font-black text-white mb-2 drop-shadow-md">
+                        <p className="text-5xl font-black mb-2">
                             {currentWinner.full_name}
                         </p>
-                        <p className="text-lg md:text-2xl text-green-200 font-semibold flex items-center justify-center gap-2">
-                            <span className="opacity-75">🎟️</span> {currentWinner.coupon_code}
+                        <p className="text-2xl">
+                            🎟️ {currentWinner.coupon_code}
                         </p>
                     </div>
                 )}
 
-                {/* 4. Kontrol Admin */}
-                <div className="flex flex-col md:flex-row gap-4 items-end bg-slate-800/50 p-4 rounded-2xl backdrop-blur-md border border-slate-700">
-                    <div className="text-left w-full md:w-auto">
-                        <label className="block text-xs text-slate-400 mb-1 uppercase font-bold tracking-wider">
-                            Hadiah
-                        </label>
-                        <select
-                            value={selectedPrizeType}
-                            onChange={(e) => {
-                                setSelectedPrizeType(e.target.value);
-                                setCurrentWinner(null);
-                                setDisplayNumber("XXXXXXXX");
-                            }}
-                            disabled={isRolling}
-                            className="bg-slate-700 border-slate-600 text-white rounded-lg px-4 py-2 w-full md:w-64 focus:ring-yellow-500 focus:border-yellow-500 shadow-inner"
-                        >
-                            {prizes.map((prize) => (
-                                <option key={prize.id} value={prize.prize_types_id}>
-                                    {prize.prize_name} (Sisa: {getRemainingQty(prize.prize_types_id)})
-                                </option>
-                            ))}
-                        </select>
+                {/* 4. Kontrol Admin (POIN 1: HANYA MUNCUL JIKA ADMIN) */}
+                {isAdmin ? (
+                    <div className="bg-slate-800/80 p-6 rounded-2xl backdrop-blur-md border border-slate-600 w-full max-w-4xl">
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                            {/* Input Config (Poin 5) */}
+                            <div>
+                                <label className="text-xs text-slate-400 uppercase font-bold">
+                                    Animasi (ms)
+                                </label>
+                                <input
+                                    type="number"
+                                    value={animDuration}
+                                    onChange={(e) =>
+                                        setAnimDuration(Number(e.target.value))
+                                    }
+                                    className="w-full bg-slate-700 text-white rounded px-2 py-2"
+                                />
+                            </div>
+                            <div>
+                                <label className="text-xs text-slate-400 uppercase font-bold">
+                                    Jeda (ms)
+                                </label>
+                                <input
+                                    type="number"
+                                    value={intermissionDelay}
+                                    onChange={(e) =>
+                                        setIntermissionDelay(
+                                            Number(e.target.value)
+                                        )
+                                    }
+                                    className="w-full bg-slate-700 text-white rounded px-2 py-2"
+                                />
+                            </div>
+
+                            {/* Pilih Hadiah */}
+                            <div>
+                                <label className="text-xs text-slate-400 uppercase font-bold">
+                                    Hadiah
+                                </label>
+                                <select
+                                    value={selectedPrizeType}
+                                    onChange={(e) => {
+                                        setSelectedPrizeType(e.target.value);
+                                        setCurrentWinner(null);
+                                        setDisplayNumber("XXXXXXXX");
+                                    }}
+                                    disabled={isRolling}
+                                    className="w-full bg-slate-700 text-white rounded px-2 py-2"
+                                >
+                                    {prizes.map((p) => (
+                                        <option
+                                            key={p.id}
+                                            value={p.prize_types_id}
+                                        >
+                                            {p.prize_name}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            {/* Tombol Auto Loop (Poin 4) */}
+                            <button
+                                onClick={handleStartAutoDraw}
+                                disabled={isRolling}
+                                className={`w-full py-2.5 rounded-lg font-bold text-lg shadow-lg ${
+                                    isRolling
+                                        ? "bg-slate-600 cursor-not-allowed"
+                                        : "bg-red-600 hover:bg-red-500 text-white"
+                                }`}
+                            >
+                                {isRolling ? "MENGUNDI..." : "🎲 AUTO DRAW"}
+                            </button>
+                        </div>
+                        <p className="text-center text-xs text-slate-500 mt-2">
+                            *Mode Admin: Klik sekali, sistem otomatis mengundi
+                            sampai habis atau di-stop.
+                        </p>
                     </div>
-
-                    <button
-                        onClick={handleStartDraw}
-                        disabled={isRolling}
-                        className={`w-full md:w-auto px-8 py-2.5 rounded-lg font-bold text-lg shadow-lg transition-all transform active:scale-95 flex items-center justify-center gap-2 ${
-                            isRolling
-                                ? "bg-slate-600 text-slate-400 cursor-not-allowed"
-                                : "bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 text-white hover:shadow-red-600/50 ring-2 ring-red-400/20"
-                        }`}
-                    >
-                        {isRolling ? (
-                            <>
-                                <span className="animate-spin">↻</span>{" "}
-                                MENGACAK...
-                            </>
-                        ) : (
-                            <>🎲 MULAI ACAK</>
-                        )}
-                    </button>
-                </div>
-            </div>
-
-            {/* Background Decoration */}
-            <div className="absolute inset-0 z-0 opacity-30 pointer-events-none overflow-hidden">
-                <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-500 rounded-full mix-blend-multiply filter blur-3xl animate-blob"></div>
-                <div className="absolute top-1/3 right-1/4 w-96 h-96 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl animate-blob animation-delay-2000"></div>
-                <div className="absolute -bottom-8 left-1/2 w-96 h-96 bg-pink-500 rounded-full mix-blend-multiply filter blur-3xl animate-blob animation-delay-4000"></div>
+                ) : (
+                    <div className="text-slate-500 text-sm mt-8 animate-pulse">
+                        Menunggu pengundian dimulai oleh panitia...
+                    </div>
+                )}
             </div>
         </div>
     );

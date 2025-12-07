@@ -394,4 +394,69 @@ class AdminEventController extends Controller
             'data' => [$res]
         ]);
     }
+
+   public function drawOneWinner(Request $request)
+{
+    // Validasi input
+    $request->validate([
+        'event_id' => 'required',
+        'prize_types_id' => 'required'
+    ]);
+
+    // 1. Cek dulu, apakah total pesertanya beneran ada?
+    $totalPeserta = \App\Models\Winner::where('events_id', $request->event_id)
+                    ->where('prize_types_id', $request->prize_types_id)
+                    ->count();
+
+    if ($totalPeserta == 0) {
+        return response()->json([
+            'status' => 'error',
+            'message' => 'Admin belum input data peserta untuk hadiah ini!'
+        ], 404);
+    }
+
+    // 2. Kalau peserta ada, baru cari yang belum menang
+    $candidate = \App\Models\Winner::where('events_id', $request->event_id)
+                    ->where('prize_types_id', $request->prize_types_id)
+                    ->whereNull('won_at')
+                    ->inRandomOrder()
+                    ->first();
+
+    // 3. Kalau $candidate kosong (padahal totalPeserta > 0), berarti habis
+    if (!$candidate) {
+        return response()->json([
+            'status' => 'error',
+            'message' => 'Semua hadiah sudah dibagikan (Kuota Habis)!' 
+        ], 404);
+    }
+
+    // 4. Kunci Pemenang (PENTING: Save ke DB)
+    $candidate->won_at = now();
+    $candidate->save(); 
+
+    // 5. Kembalikan data ke Frontend
+    return response()->json([
+        'status' => 'success',
+        'winner' => $candidate,
+        // Hitung sisa untuk update UI
+        'remaining' => \App\Models\Winner::where('events_id', $request->event_id)
+                        ->where('prize_types_id', $request->prize_types_id)
+                        ->whereNull('won_at')
+                        ->count()
+    ]);
+}
+
+public function getLiveStatus($event_id)
+{
+    // Ambil pemenang TERBARU (yang baru saja diundi Admin)
+    $latestWinner = \App\Models\Winner::where('events_id', $event_id)
+                    ->whereNotNull('won_at')
+                    ->latest('won_at')
+                    ->first();
+
+    return response()->json([
+        'latest_winner' => $latestWinner,
+        'server_time' => now()->timestamp
+    ]);
+}
 }
