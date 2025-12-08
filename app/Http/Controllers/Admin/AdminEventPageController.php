@@ -72,4 +72,6 @@ class AdminEventPageController extends Controller
             'winners' => $winnersData
         ]);
     }
+
+    
 }

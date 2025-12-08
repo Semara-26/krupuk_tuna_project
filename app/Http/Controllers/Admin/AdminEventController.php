@@ -300,6 +300,7 @@ class AdminEventController extends Controller
                 "data" => $th->getMessage()
             ]);
         }
+        
     }
 
     public function removeEvent($event_id)

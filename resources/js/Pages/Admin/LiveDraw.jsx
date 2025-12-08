@@ -7,12 +7,14 @@ import axios from "axios";
 
 export default function LiveDraw({ event, prizes, winners }) {
     // --- STATE UTAMA ---
-    const [selectedPrizeType, setSelectedPrizeType] = useState(prizes[0]?.prize_types_id || "");
+    const [selectedPrizeType, setSelectedPrizeType] = useState(
+        prizes[0]?.prize_types_id || ""
+    );
     const [isRolling, setIsRolling] = useState(false);
     const [displayNumber, setDisplayNumber] = useState("XXXXXXXX");
     const [currentWinner, setCurrentWinner] = useState(null);
     const [showConfetti, setShowConfetti] = useState(false);
-    
+
     // STATE BARU: Simpan array winners, akan dikurangi setiap kali ada pemenang
     const [remainingWinners, setRemainingWinners] = useState(winners || []);
 
@@ -20,17 +22,20 @@ export default function LiveDraw({ event, prizes, winners }) {
 
     // --- FUNGSI: HITUNG SISA QTY PER PRIZE TYPE ---
     const getRemainingQty = (prizeTypeId) => {
-        return remainingWinners.filter(w => w.prize_types_id == prizeTypeId).length;
+        return remainingWinners.filter((w) => w.prize_types_id == prizeTypeId)
+            .length;
     };
 
     // --- FUNGSI: MENGACAK NOMOR (EFEK VISUAL) ---
     const startRollingEffect = () => {
         rollingInterval.current = setInterval(() => {
             // Generate 8 random characters (numbers + letters, excluding I and U)
-            const chars = '0123456789ABCDEFGHJKLMNOPQRSTVWXYZ'; // Removed I and U
-            let randomCode = '';
+            const chars = "0123456789ABCDEFGHJKLMNOPQRSTVWXYZ"; // Removed I and U
+            let randomCode = "";
             for (let i = 0; i < 8; i++) {
-                randomCode += chars.charAt(Math.floor(Math.random() * chars.length));
+                randomCode += chars.charAt(
+                    Math.floor(Math.random() * chars.length)
+                );
             }
             setDisplayNumber(randomCode);
         }, 50);
@@ -49,7 +54,7 @@ export default function LiveDraw({ event, prizes, winners }) {
 
         // Filter winners berdasarkan prize_types_id yang dipilih
         const filteredWinners = remainingWinners.filter(
-            w => w.prize_types_id == selectedPrizeType
+            (w) => w.prize_types_id == selectedPrizeType
         );
 
         // Cek apakah masih ada pemenang tersisa
@@ -79,19 +84,19 @@ export default function LiveDraw({ event, prizes, winners }) {
 
         // 4. Hapus pemenang dari array
         const updatedWinners = remainingWinners.filter(
-            w => w.coupon_code !== nextWinner.coupon_code
+            (w) => w.coupon_code !== nextWinner.coupon_code
         );
         setRemainingWinners(updatedWinners);
 
         // 5. Simpan ke cache di backend
         try {
             // Pastikan selalu kirim array, bahkan jika kosong
-            await axios.post(route('admin.winner.store-left'), {
+            await axios.post(route("admin.winner.store-left"), {
                 event_id: event.id,
-                winners: updatedWinners.length > 0 ? updatedWinners : []
+                winners: updatedWinners.length > 0 ? updatedWinners : [],
             });
         } catch (error) {
-            console.error('Gagal menyimpan ke cache:', error);
+            console.error("Gagal menyimpan ke cache:", error);
         }
     };
 
@@ -110,7 +115,9 @@ export default function LiveDraw({ event, prizes, winners }) {
     };
 
     // Cari nama hadiah yang lagi dipilih
-    const currentPrizeObj = prizes.find((p) => p.prize_types_id == selectedPrizeType);
+    const currentPrizeObj = prizes.find(
+        (p) => p.prize_types_id == selectedPrizeType
+    );
 
     return (
         <div className="min-h-screen bg-slate-900 flex flex-col items-center relative overflow-hidden font-sans">
@@ -174,8 +181,12 @@ export default function LiveDraw({ event, prizes, winners }) {
                         <p className="text-3xl md:text-5xl font-black text-white mb-2 drop-shadow-md">
                             {currentWinner.full_name}
                         </p>
+                        <p className="text-3xl md:text-5xl font-black text-white mb-2 drop-shadow-md">
+                            {currentWinner.phone}
+                        </p>
                         <p className="text-lg md:text-2xl text-green-200 font-semibold flex items-center justify-center gap-2">
-                            <span className="opacity-75">🎟️</span> {currentWinner.coupon_code}
+                            <span className="opacity-75">🎟️</span>{" "}
+                            {currentWinner.coupon_code}
                         </p>
                     </div>
                 )}
@@ -197,8 +208,12 @@ export default function LiveDraw({ event, prizes, winners }) {
                             className="bg-slate-700 border-slate-600 text-white rounded-lg px-4 py-2 w-full md:w-64 focus:ring-yellow-500 focus:border-yellow-500 shadow-inner"
                         >
                             {prizes.map((prize) => (
-                                <option key={prize.id} value={prize.prize_types_id}>
-                                    {prize.prize_name} (Sisa: {getRemainingQty(prize.prize_types_id)})
+                                <option
+                                    key={prize.id}
+                                    value={prize.prize_types_id}
+                                >
+                                    {prize.prize_name} (Sisa:{" "}
+                                    {getRemainingQty(prize.prize_types_id)})
                                 </option>
                             ))}
                         </select>

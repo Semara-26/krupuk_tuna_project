@@ -126,7 +126,7 @@ Route::middleware('auth:admin')->group(function () {
 
     Route::get('/admin/winners', [AdminEventPageController::class, 'winners'])->name('admin.winners');
 
-    Route::get('/admin/live-draw/{event_id}', [LiveDrawPageController::class, "index"])->name('admin.live-draw');
+    Route::get('/LIV3/{event_id}', [LiveDrawPageController::class, "index"])->name('admin.live-draw');
 
     Route::post('/admin/winners/left', [LiveDrawPageController::class, 'storeCache'])->name('admin.winner.store-left');
 });
