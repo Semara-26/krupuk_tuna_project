@@ -81,7 +81,11 @@ Route::get('/lacak', function () {
 //cek kupon
 Route::get('/coupon/check/{coupon}', [CouponConfirmationController::class, 'checkCoupon'])->name('check.coupon');
 
+// Route Publik untuk Halaman Live Draw (Auto-detect Event)
+Route::get('/live-draw', [LiveDrawPageController::class, 'indexPublic'])->name('live-draw.index');
 
+//Route Publik untuk User (Polling Status)
+Route::get('/api/live-draw/status/{event_id}', [AdminEventController::class, 'getLiveStatus'])->name('api.livedraw.status');
 
 //admin
 //disini harus login dulu
@@ -129,6 +133,11 @@ Route::middleware('auth:admin')->group(function () {
     Route::get('/LIV3/{event_id}', [LiveDrawPageController::class, "index"])->name('admin.live-draw');
 
     Route::post('/admin/winners/left', [LiveDrawPageController::class, 'storeCache'])->name('admin.winner.store-left');
+
+    //Route Admin (Eksekusi Undian Satu per Satu)
+    Route::post('/admin/draw-one', [AdminEventController::class, 'drawOneWinner'])->name('admin.draw-one');
+
+    Route::post('/draw-winner', [AdminEventController::class, 'drawOneWinner']);
 });
 
 Route::get('/admin/login', [AdminLoginController::class, 'index'])->name('login');

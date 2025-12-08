@@ -49,7 +49,7 @@ class AdminEventController extends Controller
                     'data' => []
                 ], 400);
             }
-            
+
             if ($num > 1) {
                 $winner_keys = array_rand($confirmation_array, $num);
             } else {
@@ -300,7 +300,6 @@ class AdminEventController extends Controller
                 "data" => $th->getMessage()
             ]);
         }
-        
     }
 
     public function removeEvent($event_id)
@@ -393,6 +392,122 @@ class AdminEventController extends Controller
             'code' => 200,
             'message' => 'success',
             'data' => [$res]
+        ]);
+    }
+
+    public function drawOneWinner(Request $request)
+    {
+        // Validasi input
+        $request->validate([
+            'event_id' => 'required',
+            'prize_types_id' => 'required'
+        ]);
+
+        // 1. Cek dulu, apakah total pesertanya beneran ada?
+        $totalPeserta = \App\Models\Winner::where('events_id', $request->event_id)
+            ->where('prize_types_id', $request->prize_types_id)
+            ->count();
+
+        if ($totalPeserta == 0) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Admin belum input data peserta untuk hadiah ini!'
+            ], 404);
+        }
+
+        // 2. Kalau peserta ada, baru cari yang belum menang (Definisikan $candidate di sini)
+        $candidate = \App\Models\Winner::where('events_id', $request->event_id)
+            ->where('prize_types_id', $request->prize_types_id)
+            ->whereNull('won_at')
+            ->inRandomOrder()
+            ->first();
+
+        // 3. Kalau $candidate kosong (padahal totalPeserta > 0), berarti habis
+        if (!$candidate) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Semua hadiah sudah dibagikan (Kuota Habis)!'
+            ], 404);
+        }
+
+        $candidate->won_at = now();
+        $candidate->save();
+
+        // --- BAGIAN INI YANG KITA UBAH BIAR LEBIH AMAN ---
+
+        // Ubah object Eloquent jadi Array biasa supaya tidak mengganggu database
+        $winnerData = $candidate->toArray();
+
+        // Cari nama peserta
+        $profilePeserta = \App\Models\CouponConfirmation::where('coupon_code', $candidate->coupon_code)->first();
+
+        $fullName = $profilePeserta ? $profilePeserta->full_name : null;
+        $phone = $profilePeserta ? $profilePeserta->phone : null;
+
+        // --- CENSORING ---
+        // Name → show FIRST 4
+        $censoredName = $fullName
+            ? substr($fullName, 0, 4) . str_repeat('*', max(strlen($fullName) - 4, 1))
+            : 'Nama Tidak Ditemukan';
+
+        // Phone → show LAST 4
+        $censoredPhone = $phone
+            ? str_repeat('*', max(strlen($phone) - 4, 1)) . substr($phone, -4)
+            : '****';
+
+        // Put into array
+        $winnerData['name'] = $censoredName;
+        $winnerData['phone'] = $censoredPhone;
+
+
+        // 4. Kembalikan data Array ke Frontend
+        return response()->json([
+            'status' => 'success',
+            'winner' => $winnerData, // Kirim array yang sudah aman
+            'remaining' => \App\Models\Winner::where('events_id', $request->event_id)
+                ->where('prize_types_id', $request->prize_types_id)
+                ->whereNull('won_at')
+                ->count()
+        ]);
+    }
+
+    public function getLiveStatus($event_id)
+    {
+        $latest = \App\Models\Winner::where('events_id', $event_id)
+            ->whereNotNull('won_at')
+            ->latest('won_at')
+            ->first();
+
+        if (!$latest) {
+            return response()->json([
+                'latest_winner' => null,
+                'server_time' => now()->timestamp
+            ]);
+        }
+
+        // Fetch profile
+        $profile = \App\Models\CouponConfirmation::where('coupon_code', $latest->coupon_code)->first();
+
+        // Censored name & phone
+        $fullName = $profile?->full_name;
+        $phone = $profile?->phone;
+
+        $censoredName = $fullName
+            ? substr($fullName, 0, 4) . str_repeat('*', max(strlen($fullName) - 4, 1))
+            : "Nama Tidak Ditemukan";
+
+        $censoredPhone = $phone
+            ? str_repeat('*', max(strlen($phone) - 4, 1)) . substr($phone, -4)
+            : "****";
+
+        // Transform into array
+        $latestArr = $latest->toArray();
+        $latestArr['name'] = $censoredName;
+        $latestArr['phone'] = $censoredPhone;
+
+        return response()->json([
+            'latest_winner' => $latestArr,
+            'server_time' => now()->timestamp
         ]);
     }
 }

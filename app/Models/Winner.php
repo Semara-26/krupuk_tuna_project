@@ -10,6 +10,7 @@ class Winner extends Model
     protected $fillable = [
         "coupon_code",
         "events_id",
-        "prize_types_id"
+        "prize_types_id",
+        'won_at'
     ];
 }

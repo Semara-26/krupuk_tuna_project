@@ -102,7 +102,7 @@ export default function PanelUndi({
         const newWinner = {
             full_name: couponInfo.full_name,
             coupon_code: couponCode,
-            prize_type: selectedPrizeId,
+            prize_type: activeEvent.prizes.find(p => p.id == selectedPrizeId).prize_types_id,
             source: 'manual'
         };
         setWinners([...winners, newWinner]);
@@ -136,7 +136,7 @@ export default function PanelUndi({
                 const randomWinners = res.data.data;
                 const formattedWinners = randomWinners.map((w) => ({
                     ...w,
-                    prize_type: selectedPrizeId,
+                    prize_type: activeEvent.prizes.find(p => p.id == selectedPrizeId).prize_types_id,
                     source: 'random'
                 }));
                 
@@ -223,8 +223,8 @@ export default function PanelUndi({
                 >
                     <option value="">-- Pilih Hadiah --</option>
                     {activeEvent.prizes.map((p) => (
-                        <option key={p.id} value={p.prize_types_id}>
-                            {p.prize_name} (Sisa: {p.qty})
+                        <option key={p.id} value={p.id}>
+                            {p.prize_name} (Sisa: {p.remaining_qty})
                         </option>
                     ))}
                 </select>
