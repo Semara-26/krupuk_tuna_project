@@ -27,4 +27,6 @@ Route::post('/admin/update-event', [AdminEventController::class, 'updateGachaEve
 Route::get('/admin/end-event/{event_id}', [AdminEventController::class, 'endGachaEvent']);
 Route::get('/admin/delete-event/{event_id}', [AdminEventController::class, 'removeEvent']);
 
+Route::post('/draw-winner', [AdminEventController::class, 'drawOneWinner']);
+
 // Route::post('/admin/login', [AdminLoginController::class, 'adminLogin']);

@@ -20,6 +20,7 @@ export default function LiveDraw({ event, prizes, isAdmin }) {
     const [isRolling, setIsRolling] = useState(false);
     const [displayNumber, setDisplayNumber] = useState("XXXXXXXX");
     const [currentWinner, setCurrentWinner] = useState(null);
+    const [winnersHistory, setWinnersHistory] = useState([]);
     const [showConfetti, setShowConfetti] = useState(false);
 
     // State buat nyimpen ID pemenang terakhir biar ga animasi ulang
@@ -122,7 +123,7 @@ export default function LiveDraw({ event, prizes, isAdmin }) {
                 );
 
                 // Request API (langsung jalan, gak nunggu delay dulu)
-                const apiPromise = axios.post(route("admin.draw-one"), {
+                const apiPromise = axios.post("/api/draw-winner", {
                     event_id: event.id,
                     prize_types_id: selectedPrizeType,
                 });
@@ -138,6 +139,7 @@ export default function LiveDraw({ event, prizes, isAdmin }) {
                 const newWinner = res.data.winner;
                 stopVisualRolling(newWinner);
                 lastWinnerIdRef.current = newWinner.id;
+                setWinnersHistory((prev) => [...prev, newWinner]);
 
                 // 4. Cek Sisa (Dari response backend)
                 if (res.data.remaining <= 0) {
@@ -197,134 +199,175 @@ export default function LiveDraw({ event, prizes, isAdmin }) {
                     alt="Logo"
                     className="h-16 rounded-lg p-2 "
                 />
-                <h1 className="hidden md:block absolute left-1/2 transform -translate-x-1/2 text-3xl font-black text-yellow-400 uppercase tracking-widest">
-                    {event.title}
-                </h1>
             </div>
 
-            {/* KONTEN TENGAH */}
-            <div className="flex-grow flex flex-col items-center justify-center w-full max-w-6xl px-4 z-10 -mt-10">
-                {/* 1. Judul Hadiah */}
-                <div className="mb-10 text-center">
-                    <p className="text-slate-400 text-xl mb-2 uppercase tracking-[0.2em]">
-                        Memperebutkan Hadiah:
-                    </p>
-                    <div className="inline-block bg-gradient-to-r from-yellow-400 to-yellow-600 text-slate-900 px-12 py-4 rounded-full text-4xl font-black shadow-2xl">
-                        {currentPrizeObj ? currentPrizeObj.prize_name : "..."}
-                    </div>
-                </div>
-
-                {/* 2. Kotak Nomor */}
-                <div className="bg-white text-slate-900 rounded-3xl p-16 shadow-[0_0_50px_rgba(255,255,255,0.1)] border-8 border-slate-700 mb-8 w-full max-w-4xl mx-auto relative overflow-hidden">
-                    <div
-                        className={`font-mono font-black tracking-widest text-center transition-all ${
-                            isRolling
-                                ? "text-8xl opacity-50 blur-[2px]"
-                                : "text-9xl scale-110 text-slate-800"
-                        }`}
-                    >
-                        {displayNumber}
-                    </div>
-                </div>
-
-                {/* 3. Data Pemenang */}
-                {currentWinner && !isRolling && (
-                    <div className="bg-green-600 border-4 border-green-400 rounded-2xl p-8 mb-8 text-center animate-bounce-in shadow-2xl w-full max-w-2xl text-white">
-                        <h2 className="text-2xl font-bold mb-2 uppercase">
-                            Selamat Kepada
-                        </h2>
-                        <p className="text-5xl font-black mb-2">
-                            {currentWinner.full_name}
+            {/* WRAPPER UTAMA: Ganti Grid jadi Flex biar lebih fleksibel */}
+            <div className="flex-grow w-full px-4 lg:px-8 z-10 -mt-10 flex flex-col lg:flex-row items-start gap-6">
+                {/* === KOLOM KIRI (Area Undian Utama) === */}
+                {/* Pakai 'flex-1' biar dia ambil semua sisa ruang yang ada (Dominan) */}
+                <div className="flex-1 flex flex-col items-center w-full min-w-0 pt-4">
+                    <h1 className="text-3xl md:text-5xl font-black text-yellow-400 uppercase tracking-widest mb-6 text-center drop-shadow-lg">
+                        {event.title}
+                    </h1>
+                    {/* 1. Judul Hadiah */}
+                    <div className="mb-10 text-center">
+                        <p className="text-slate-400 text-xl mb-2 uppercase tracking-[0.2em]">
+                            Memperebutkan Hadiah:
                         </p>
-                        <p className="text-2xl">
-                            🎟️ {currentWinner.coupon_code}
-                        </p>
-                    </div>
-                )}
-
-                {/* 4. Kontrol Admin (POIN 1: HANYA MUNCUL JIKA ADMIN) */}
-                {isAdmin ? (
-                    <div className="bg-slate-800/80 p-6 rounded-2xl backdrop-blur-md border border-slate-600 w-full max-w-4xl">
-                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
-                            {/* Input Config (Poin 5) */}
-                            <div>
-                                <label className="text-xs text-slate-400 uppercase font-bold">
-                                    Animasi (ms)
-                                </label>
-                                <input
-                                    type="number"
-                                    value={animDuration}
-                                    onChange={(e) =>
-                                        setAnimDuration(Number(e.target.value))
-                                    }
-                                    className="w-full bg-slate-700 text-white rounded px-2 py-2"
-                                />
-                            </div>
-                            <div>
-                                <label className="text-xs text-slate-400 uppercase font-bold">
-                                    Jeda (ms)
-                                </label>
-                                <input
-                                    type="number"
-                                    value={intermissionDelay}
-                                    onChange={(e) =>
-                                        setIntermissionDelay(
-                                            Number(e.target.value)
-                                        )
-                                    }
-                                    className="w-full bg-slate-700 text-white rounded px-2 py-2"
-                                />
-                            </div>
-
-                            {/* Pilih Hadiah */}
-                            <div>
-                                <label className="text-xs text-slate-400 uppercase font-bold">
-                                    Hadiah
-                                </label>
-                                <select
-                                    value={selectedPrizeType}
-                                    onChange={(e) => {
-                                        setSelectedPrizeType(e.target.value);
-                                        setCurrentWinner(null);
-                                        setDisplayNumber("XXXXXXXX");
-                                    }}
-                                    disabled={isRolling}
-                                    className="w-full bg-slate-700 text-white rounded px-2 py-2"
-                                >
-                                    {prizes.map((p) => (
-                                        <option
-                                            key={p.id}
-                                            value={p.prize_types_id}
-                                        >
-                                            {p.prize_name}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-
-                            {/* Tombol Auto Loop (Poin 4) */}
-                            <button
-                                onClick={handleStartAutoDraw}
-                                disabled={isRolling}
-                                className={`w-full py-2.5 rounded-lg font-bold text-lg shadow-lg ${
-                                    isRolling
-                                        ? "bg-slate-600 cursor-not-allowed"
-                                        : "bg-red-600 hover:bg-red-500 text-white"
-                                }`}
-                            >
-                                {isRolling ? "MENGUNDI..." : "🎲 AUTO DRAW"}
-                            </button>
+                        <div className="inline-block bg-gradient-to-r from-yellow-400 to-yellow-600 text-slate-900 px-12 py-4 rounded-full text-4xl font-black shadow-2xl">
+                            {currentPrizeObj
+                                ? currentPrizeObj.prize_name
+                                : "..."}
                         </div>
-                        <p className="text-center text-xs text-slate-500 mt-2">
-                            *Mode Admin: Klik sekali, sistem otomatis mengundi
-                            sampai habis atau di-stop.
-                        </p>
                     </div>
-                ) : (
-                    <div className="text-slate-500 text-sm mt-8 animate-pulse">
-                        Menunggu pengundian dimulai oleh panitia...
+
+                    {/* 2. Kotak Nomor */}
+                    <div className="bg-white text-slate-900 rounded-3xl p-16 shadow-[0_0_50px_rgba(255,255,255,0.1)] border-8 border-slate-700 mb-8 w-full max-w-5xl relative overflow-hidden text-center">
+                        <div
+                            className={`font-mono font-black tracking-widest text-center transition-all ${
+                                isRolling
+                                    ? "text-8xl opacity-50 blur-[2px]"
+                                    : "text-9xl scale-110 text-slate-800"
+                            }`}
+                        >
+                            {displayNumber}
+                        </div>
                     </div>
-                )}
+
+                    {/* 3. Data Pemenang (Muncul dibawah kotak) */}
+                    {currentWinner && !isRolling && (
+                        <div className="bg-green-600 border-4 border-green-400 rounded-2xl p-8 mb-8 text-center animate-bounce-in shadow-2xl w-full max-w-3xl text-white">
+                            <h2 className="text-2xl font-bold mb-2 uppercase">
+                                Selamat Kepada
+                            </h2>
+                            <p className="text-5xl font-black mb-2">
+                                {currentWinner.name}
+                            </p>
+                            <p className="text-2xl">
+                                🎟️ {currentWinner.coupon_code}
+                            </p>
+                        </div>
+                    )}
+
+                    {/* 4. Kontrol Admin (HANYA MUNCUL JIKA ADMIN) */}
+                    {isAdmin ? (
+                        <div className="bg-slate-800/80 p-6 rounded-2xl backdrop-blur-md border border-slate-600 w-full max-w-4xl">
+                            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                                {/* Input Animasi */}
+                                <div>
+                                    <label className="text-xs text-slate-400 uppercase font-bold">
+                                        Animasi (ms)
+                                    </label>
+                                    <input
+                                        type="number"
+                                        value={animDuration}
+                                        onChange={(e) =>
+                                            setAnimDuration(
+                                                Number(e.target.value)
+                                            )
+                                        }
+                                        className="w-full bg-slate-700 text-white rounded px-2 py-2"
+                                    />
+                                </div>
+                                {/* Input Jeda */}
+                                <div>
+                                    <label className="text-xs text-slate-400 uppercase font-bold">
+                                        Jeda (ms)
+                                    </label>
+                                    <input
+                                        type="number"
+                                        value={intermissionDelay}
+                                        onChange={(e) =>
+                                            setIntermissionDelay(
+                                                Number(e.target.value)
+                                            )
+                                        }
+                                        className="w-full bg-slate-700 text-white rounded px-2 py-2"
+                                    />
+                                </div>
+                                {/* Pilih Hadiah */}
+                                <div>
+                                    <label className="text-xs text-slate-400 uppercase font-bold">
+                                        Hadiah
+                                    </label>
+                                    <select
+                                        value={selectedPrizeType}
+                                        onChange={(e) => {
+                                            setSelectedPrizeType(
+                                                e.target.value
+                                            );
+                                            setCurrentWinner(null);
+                                            setDisplayNumber("XXXXXXXX");
+                                        }}
+                                        disabled={isRolling}
+                                        className="w-full bg-slate-700 text-white rounded px-2 py-2"
+                                    >
+                                        {prizes.map((p) => (
+                                            <option
+                                                key={p.id}
+                                                value={p.prize_types_id}
+                                            >
+                                                {p.prize_name}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                                {/* Tombol Auto Loop */}
+                                <button
+                                    onClick={handleStartAutoDraw}
+                                    disabled={isRolling}
+                                    className={`w-full py-2.5 rounded-lg font-bold text-lg shadow-lg ${
+                                        isRolling
+                                            ? "bg-slate-600 cursor-not-allowed"
+                                            : "bg-red-600 hover:bg-red-500 text-white"
+                                    }`}
+                                >
+                                    {isRolling ? "MENGUNDI..." : "🎲 AUTO DRAW"}
+                                </button>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="text-slate-500 text-sm mt-8 animate-pulse">
+                            Menunggu pengundian dimulai oleh panitia...
+                        </div>
+                    )}
+                </div>
+
+                {/* === KOLOM KANAN (Riwayat Pemenang) === */}
+                {/* Fix Width w-96 (sekitar 380px), dan flex-none biar gak melar/menyusut */}
+                <div className="w-full lg:w-96 flex-none bg-slate-800/50 backdrop-blur-sm rounded-3xl border border-slate-700 p-6 h-fit max-h-[80vh] overflow-y-auto custom-scrollbar shadow-2xl sticky top-4">
+                    <h3 className="text-yellow-400 font-black text-xl mb-6 flex items-center gap-2 border-b border-slate-600 pb-4 sticky top-0 bg-slate-800/50 backdrop-blur-md z-10">
+                        📜 Riwayat Pemenang
+                    </h3>
+
+                    {winnersHistory.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center py-10 text-slate-500 opacity-50">
+                            <span className="text-4xl mb-2">🤷‍♂️</span>
+                            <p className="italic text-sm">Belum ada pemenang</p>
+                        </div>
+                    ) : (
+                        <div className="space-y-3">
+                            {winnersHistory.map((winner, index) => (
+                                <div
+                                    key={index}
+                                    className="bg-slate-700 p-3 rounded-xl flex items-center justify-between border-l-4 border-yellow-500 animate-fade-in-down shadow-md hover:bg-slate-600 transition-colors"
+                                >
+                                    <div className="overflow-hidden">
+                                        <p className="text-white font-bold text-md truncate">
+                                            {winner.name}
+                                        </p>
+                                        <p className="text-slate-400 text-[10px] uppercase tracking-wider flex items-center gap-1">
+                                            🎟️ {winner.coupon_code}
+                                        </p>
+                                    </div>
+                                    <div className="text-yellow-400 font-mono font-bold text-lg opacity-80">
+                                        #{winnersHistory.length - index}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
             </div>
         </div>
     );

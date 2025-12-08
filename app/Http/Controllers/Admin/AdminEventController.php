@@ -395,7 +395,7 @@ class AdminEventController extends Controller
         ]);
     }
 
-   public function drawOneWinner(Request $request)
+public function drawOneWinner(Request $request)
 {
     // Validasi input
     $request->validate([
@@ -415,7 +415,7 @@ class AdminEventController extends Controller
         ], 404);
     }
 
-    // 2. Kalau peserta ada, baru cari yang belum menang
+    // 2. Kalau peserta ada, baru cari yang belum menang (Definisikan $candidate di sini)
     $candidate = \App\Models\Winner::where('events_id', $request->event_id)
                     ->where('prize_types_id', $request->prize_types_id)
                     ->whereNull('won_at')
@@ -430,15 +430,26 @@ class AdminEventController extends Controller
         ], 404);
     }
 
-    // 4. Kunci Pemenang (PENTING: Save ke DB)
-    $candidate->won_at = now();
+ $candidate->won_at = now();
     $candidate->save(); 
 
-    // 5. Kembalikan data ke Frontend
+    // --- BAGIAN INI YANG KITA UBAH BIAR LEBIH AMAN ---
+    
+    // Ubah object Eloquent jadi Array biasa supaya tidak mengganggu database
+    $winnerData = $candidate->toArray(); 
+    
+    // Cari nama peserta
+    $profilePeserta = \App\Models\CouponConfirmation::where('coupon_code', $candidate->coupon_code)->first();
+    
+    // Masukkan nama ke dalam ARRAY (bukan ke object model)
+    $winnerData['name'] = $profilePeserta ? $profilePeserta->full_name : 'Nama Tidak Ditemukan';
+    
+    // ---------------------------------------------------
+
+    // 4. Kembalikan data Array ke Frontend
     return response()->json([
         'status' => 'success',
-        'winner' => $candidate,
-        // Hitung sisa untuk update UI
+        'winner' => $winnerData, // Kirim array yang sudah aman
         'remaining' => \App\Models\Winner::where('events_id', $request->event_id)
                         ->where('prize_types_id', $request->prize_types_id)
                         ->whereNull('won_at')
