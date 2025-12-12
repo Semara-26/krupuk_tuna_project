@@ -33,10 +33,14 @@ class AdminEventController extends Controller
             }
             $winners = [];
             $confirmation_id = DB::table('coupon_confirmations as cc')
-                ->join('coupons as c', 'c.id', "=", 'cc.coupon_code')
-                ->where("c.status", "=", '0')
-                ->where("cc.created_at", "<", $event_data->last_buy_date)
-                ->select("cc.id", "cc.coupon_code")->get();
+                ->join('coupons as c', 'c.id', '=', 'cc.coupon_code')
+                ->leftJoin('winners as w', 'w.coupon_code', '=', 'cc.coupon_code')
+                ->where('c.status', '=', '0')
+                ->where('cc.created_at', '<', $event_data->last_buy_date)
+                ->whereNull('w.coupon_code')   // <-- this excludes winners
+                ->select('cc.id', 'cc.coupon_code')
+                ->get();
+
 
             $confirmation_array = $confirmation_id->pluck("id")->toArray();
             $coupon_code_array = $confirmation_id->pluck("coupon_code")->toArray();
@@ -220,10 +224,13 @@ class AdminEventController extends Controller
             "events_id" => "required|integer|exists:events,id",
             "winners" => "required|array",
             "winners.*.coupon_code" => "required",
-            "winners.*.prize_type" => "required"
+            "winners.*.prize_types_id" => "required|integer",
+            "winners.*.mode_type" => "required|integer|in:0,1", // Add validation for mode_type in each winner
+            "winners.*.prizes_id" => "required|integer|exists:prizes,id",
         ], [
             "required" => "tidak boleh kosong",
             "exists" => "Event tidak ditemukan",
+            "winners.*.mode_type.in" => "Mode type harus 0 (random) atau 1 (manual)",
         ]);
 
         if ($validator->fails()) {
@@ -233,28 +240,33 @@ class AdminEventController extends Controller
                 'data' => $validator->errors()
             ], 400);
         }
+
         try {
             $validatedData = $validator->validated();
-            $event_res = Events::where("id", $validatedData["events_id"])->first();
-
             $event_res = Events::find($validatedData["events_id"]);
+
             if (!$event_res) {
                 return response()->json([
                     "code" => 404,
                     "message" => "Event tidak ditemukan",
                     "data" => []
-                ]);
+                ], 404); // Don't forget HTTP status code
             }
 
             $sent_total_winners = count($validatedData["winners"]);
             $res_winner = Winner::where('events_id', $validatedData["events_id"])->count();
-            if ($sent_total_winners > $event_res->total_winners) {
+
+            // Check if adding new winners would exceed total capacity
+            if ($res_winner + $sent_total_winners > $event_res->total_winners) {
                 return response()->json([
                     "code" => 400,
-                    "message" => "Total pemenang yang diset ($event_res->total_winners) tidak sesuai dengan yang dikirim ($sent_total_winners)",
+                    "message" => "Total pemenang melebihi kapasitas. Sudah ada $res_winner pemenang, ingin tambah $sent_total_winners, kapasitas total: $event_res->total_winners",
                     "data" => []
                 ], 400);
-            } else if ($res_winner == $event_res->total_winners) {
+            }
+
+            // Check if already have enough winners
+            if ($res_winner == $event_res->total_winners) {
                 return response()->json([
                     "code" => 400,
                     "message" => "Total pemenang sudah mencukupi",
@@ -264,41 +276,72 @@ class AdminEventController extends Controller
 
             $to_store_winners_data = [];
             $coupon_controller = new CouponController();
+
+            // Check for duplicates in current batch
+            $couponCodesInBatch = [];
+
             foreach ($validatedData["winners"] as $winner) {
+                // Check duplicate in current batch
+                if (in_array($winner["coupon_code"], $couponCodesInBatch)) {
+                    return response()->json([
+                        "code" => 400,
+                        "message" => "Kupon duplikat dalam batch yang sama: " . $winner["coupon_code"],
+                        "data" => []
+                    ], 400);
+                }
+
+                // Check if coupon exists
                 $check_res = $coupon_controller->isCouponExists($winner["coupon_code"]);
-                if ($check_res) {
-                    $to_store_winners_data[] = [
-                        "coupon_code" => $winner["coupon_code"],
-                        "events_id" => $validatedData["events_id"],
-                        "prize_types_id" => $winner["prize_type"],
-                        "created_at" => Carbon::now(),
-                        "updated_at" => Carbon::now()
-                    ];
-                } else {
+                if (!$check_res) {
                     return response()->json([
                         "code" => 404,
                         "message" => "Kupon tidak ditemukan",
                         "data" => [$winner["coupon_code"]]
                     ], 404);
-                    break;
                 }
+
+                // Check if coupon already a winner for this event
+                $existingWinner = Winner::where('events_id', $validatedData["events_id"])
+                    ->where('coupon_code', $winner["coupon_code"])
+                    ->first();
+
+                if ($existingWinner) {
+                    return response()->json([
+                        "code" => 400,
+                        "message" => "Kupon sudah terdaftar sebagai pemenang",
+                        "data" => [$winner["coupon_code"]]
+                    ], 400);
+                }
+
+                $to_store_winners_data[] = [
+                    "coupon_code" => $winner["coupon_code"],
+                    "events_id" => $validatedData["events_id"],
+                    "prize_types_id" => $winner["prize_types_id"],
+                    "mode_type" => $winner["mode_type"], // Use mode_type from each winner
+                    "prizes_id" => $winner["prizes_id"],   // <<< ADD THIS
+                    "created_at" => Carbon::now(),
+                    "updated_at" => Carbon::now()
+                ];
+
+                $couponCodesInBatch[] = $winner["coupon_code"];
             }
-            // return response()->json([
-            //     "data" => $to_store_winners_data
-            // ]);
-            //i'll save it with insert
+
             $store_res = Winner::insert($to_store_winners_data);
+
             return response()->json([
                 "code" => 200,
                 "message" => "success",
-                "data" => $store_res
+                "data" => [
+                    'inserted_count' => count($to_store_winners_data),
+                    'total_winners_now' => $res_winner + count($to_store_winners_data)
+                ]
             ]);
         } catch (\Throwable $th) {
             return response()->json([
                 "code" => 500,
                 "message" => "server error",
                 "data" => $th->getMessage()
-            ]);
+            ], 500);
         }
     }
 
@@ -395,17 +438,37 @@ class AdminEventController extends Controller
         ]);
     }
 
+    // UPDATED: Use prizes_id instead of prize_types_id
     public function drawOneWinner(Request $request)
     {
-        // Validasi input
-        $request->validate([
-            'event_id' => 'required',
-            'prize_types_id' => 'required'
+        // Validasi input - CHANGED to prizes_id
+        $validator = Validator::make($request->all(), [
+            'event_id' => 'required|integer|exists:events,id',
+            'prizes_id' => 'required|integer|exists:prizes,id'
         ]);
 
-        // 1. Cek dulu, apakah total pesertanya beneran ada?
-        $totalPeserta = \App\Models\Winner::where('events_id', $request->event_id)
-            ->where('prize_types_id', $request->prize_types_id)
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $validator->errors()->first()
+            ], 400);
+        }
+
+        $eventId = $request->event_id;
+        $prizesId = $request->prizes_id;
+
+        // Get the prize details
+        $prize = \App\Models\Prize::find($prizesId);
+        if (!$prize) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Hadiah tidak ditemukan!'
+            ], 404);
+        }
+
+        // 1. Check if there are any participants for this specific prize
+        $totalPeserta = \App\Models\Winner::where('events_id', $eventId)
+            ->where('prizes_id', $prizesId) // CHANGED
             ->count();
 
         if ($totalPeserta == 0) {
@@ -415,14 +478,14 @@ class AdminEventController extends Controller
             ], 404);
         }
 
-        // 2. Kalau peserta ada, baru cari yang belum menang (Definisikan $candidate di sini)
-        $candidate = \App\Models\Winner::where('events_id', $request->event_id)
-            ->where('prize_types_id', $request->prize_types_id)
+        // 2. Find a candidate who hasn't won yet for this prize
+        $candidate = \App\Models\Winner::where('events_id', $eventId)
+            ->where('prizes_id', $prizesId) // CHANGED
             ->whereNull('won_at')
             ->inRandomOrder()
             ->first();
 
-        // 3. Kalau $candidate kosong (padahal totalPeserta > 0), berarti habis
+        // 3. If no candidate found, all prizes have been distributed
         if (!$candidate) {
             return response()->json([
                 'status' => 'error',
@@ -430,44 +493,43 @@ class AdminEventController extends Controller
             ], 404);
         }
 
+        // Mark as won
         $candidate->won_at = now();
         $candidate->save();
 
-        // --- BAGIAN INI YANG KITA UBAH BIAR LEBIH AMAN ---
-
-        // Ubah object Eloquent jadi Array biasa supaya tidak mengganggu database
+        // Convert to array
         $winnerData = $candidate->toArray();
 
-        // Cari nama peserta
+        // Get participant profile
         $profilePeserta = \App\Models\CouponConfirmation::where('coupon_code', $candidate->coupon_code)->first();
 
         $fullName = $profilePeserta ? $profilePeserta->full_name : null;
         $phone = $profilePeserta ? $profilePeserta->phone : null;
 
-        // --- CENSORING ---
-        // Name → show FIRST 4
+        // Censoring
         $censoredName = $fullName
             ? substr($fullName, 0, 4) . str_repeat('*', max(strlen($fullName) - 4, 1))
             : 'Nama Tidak Ditemukan';
 
-        // Phone → show LAST 4
         $censoredPhone = $phone
             ? str_repeat('*', max(strlen($phone) - 4, 1)) . substr($phone, -4)
             : '****';
 
-        // Put into array
+        // Add to array
         $winnerData['name'] = $censoredName;
         $winnerData['phone'] = $censoredPhone;
 
+        // Calculate remaining for this specific prize
+        $remaining = \App\Models\Winner::where('events_id', $eventId)
+            ->where('prizes_id', $prizesId) // CHANGED
+            ->whereNull('won_at')
+            ->count();
 
-        // 4. Kembalikan data Array ke Frontend
+        // 4. Return data
         return response()->json([
             'status' => 'success',
-            'winner' => $winnerData, // Kirim array yang sudah aman
-            'remaining' => \App\Models\Winner::where('events_id', $request->event_id)
-                ->where('prize_types_id', $request->prize_types_id)
-                ->whereNull('won_at')
-                ->count()
+            'winner' => $winnerData,
+            'remaining' => $remaining
         ]);
     }
 
@@ -488,10 +550,10 @@ class AdminEventController extends Controller
         // Fetch profile
         $profile = \App\Models\CouponConfirmation::where('coupon_code', $latest->coupon_code)->first();
 
-        // Censored name & phone
         $fullName = $profile?->full_name;
         $phone = $profile?->phone;
 
+        // Censored name & phone
         $censoredName = $fullName
             ? substr($fullName, 0, 4) . str_repeat('*', max(strlen($fullName) - 4, 1))
             : "Nama Tidak Ditemukan";

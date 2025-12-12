@@ -1,46 +1,47 @@
-import React, { useState, useMemo } from 'react';
-import AdminLayout from '@/Layouts/AdminLayout';
-import { Head, Link } from '@inertiajs/react';
+import React, { useState, useMemo } from "react";
+import AdminLayout from "@/Layouts/AdminLayout";
+import { Head, Link } from "@inertiajs/react";
 
 export default function WinnerList({ auth, winners }) {
-    // State untuk Event yang dipilih (default: 'Semua Event')
-    const [selectedEvent, setSelectedEvent] = useState('Semua Event');
-
-    // 1. Ambil semua Event unik dari data pemenang
+    // 1. Ambil semua Event unik
     const allEvents = useMemo(() => {
         const events = winners
-            .map(winner => winner.event || winner.event_title)
-            .filter(event => event) // Filter out null/undefined values
-        
-        // Buat Set untuk memastikan keunikan, lalu konversi kembali ke Array
+            .map((winner) => winner.event || winner.event_title)
+            .filter((event) => event);
+
         return [...new Set(events)];
     }, [winners]);
-    
-    // Opsi filter Event, selalu mulai dengan 'Semua Event'
-    const eventOptions = ['Semua Event', ...allEvents];
 
-    // 2. Filter pemenang berdasarkan Event yang dipilih (menggunakan useMemo agar efisien)
+    const [selectedEvent, setSelectedEvent] = useState(allEvents[0] || "");
+    const eventOptions = allEvents;
+
+    // 2. Filter winners berdasarkan event
     const filteredWinners = useMemo(() => {
-        if (selectedEvent === 'Semua Event') {
-            return winners;
-        }
-        return winners.filter(winner => {
-            const winnerEvent = winner.event || winner.event_title;
-            return winnerEvent === selectedEvent;
-        });
+        return winners.filter(
+            (winner) => (winner.event || winner.event_title) === selectedEvent
+        );
     }, [winners, selectedEvent]);
 
+    // --- Group winners by prize id (prizes_id) for uniqueness ---
+    // Fallback: if prizes_id missing, use hadiah string as key
+    const groupedWinners = useMemo(() => {
+        const groups = {};
 
-    // 3. Kelompokkan pemenang berdasarkan hadiah (menggunakan data yang sudah difilter)
-    const groupedWinners = filteredWinners.reduce((acc, winner) => {
-        // Logika pengelompokan berdasarkan Hadiah
-        const prizeName = winner.prize_name || (winner.tipe_hadiah === 1 ? 'Hadiah Utama' : 'Hadiah Hiburan');
-        if (!acc[prizeName]) {
-            acc[prizeName] = [];
-        }
-        acc[prizeName].push(winner);
-        return acc;
-    }, {});
+        filteredWinners.forEach((winner) => {
+            // prefer prizes_id when available, else fallback to hadiah (string)
+            const key =
+                winner.prizes_id !== undefined && winner.prizes_id !== null
+                    ? `prize_${winner.prizes_id}`
+                    : `prize_name_${(winner.hadiah || "Hadiah").toString()}`;
+
+            if (!groups[key]) {
+                groups[key] = [];
+            }
+            groups[key].push(winner);
+        });
+
+        return groups;
+    }, [filteredWinners]);
 
     // Format tanggal
     const formatDate = (dateString) => {
@@ -51,7 +52,7 @@ export default function WinnerList({ auth, winners }) {
             month: "short",
             year: "numeric",
             hour: "2-digit",
-            minute: "2-digit"
+            minute: "2-digit",
         });
     };
 
@@ -61,34 +62,45 @@ export default function WinnerList({ auth, winners }) {
 
             <div className="py-12">
                 <div className="max-w-7xl mx-auto sm:px-6 lg:px-8">
+                    {/* HEADER */}
                     <div className="flex justify-between items-center mb-6">
                         <div>
                             <h1 className="text-3xl font-bold text-gray-800">
                                 🏆 Daftar Pemenang
                             </h1>
                             <p className="text-gray-600 mt-1">
-                                Total {filteredWinners.length} Pemenang ({selectedEvent})
+                                Total {filteredWinners.length} Pemenang (
+                                {selectedEvent || "—"})
                             </p>
                         </div>
-                        <Link 
-                            href={route('admin.event')} 
+                        <Link
+                            href={route("admin.event")}
                             className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 font-semibold shadow-lg transition-all"
                         >
                             ← Kembali ke Undian
                         </Link>
                     </div>
 
-                    {/* --- Filter Event Dropdown --- */}
+                    {/* FILTER EVENT */}
                     <div className="mb-6 flex items-center gap-4 p-4 bg-gray-50 rounded-lg shadow-md border border-gray-200">
-                        <label htmlFor="event-filter" className="font-semibold text-gray-700">
+                        <label
+                            htmlFor="event-filter"
+                            className="font-semibold text-gray-700"
+                        >
                             Filter Event:
                         </label>
+
                         <select
                             id="event-filter"
                             value={selectedEvent}
                             onChange={(e) => setSelectedEvent(e.target.value)}
                             className="border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm w-full md:w-1/3"
                         >
+                            <option value="">
+                                {allEvents.length
+                                    ? "-- Pilih Event --"
+                                    : "-- Tidak ada event --"}
+                            </option>
                             {eventOptions.map((event) => (
                                 <option key={event} value={event}>
                                     {event}
@@ -96,96 +108,154 @@ export default function WinnerList({ auth, winners }) {
                             ))}
                         </select>
                     </div>
-                    {/* ----------------------------- */}
 
-                    {/* Content (menggunakan filteredWinners dan groupedWinners) */}
+                    {/* CONTENT */}
                     <div className="bg-white shadow-xl rounded-lg overflow-hidden">
                         {Object.keys(groupedWinners).length === 0 ? (
                             <div className="text-center py-12">
-                                <p className="text-gray-500 text-lg">Belum ada pemenang untuk {selectedEvent}</p>
+                                <p className="text-gray-500 text-lg">
+                                    Belum ada pemenang untuk event ini
+                                </p>
                             </div>
                         ) : (
                             <div className="p-6 space-y-6">
-                                {Object.entries(groupedWinners).map(([prizeName, winnersInGroup]) => (
-                                    <div key={prizeName} className="border-2 border-gray-200 rounded-lg overflow-hidden">
-                                        {/* Header Hadiah */}
-                                        <div className="bg-gradient-to-r from-purple-100 to-blue-100 p-4 border-b-2 border-purple-300">
-                                            <div className="flex items-center gap-3">
-                                                <span className="text-3xl">🎁</span>
-                                                <div>
-                                                    <h3 className="font-bold text-gray-800 text-xl">
-                                                        {prizeName}
-                                                    </h3>
-                                                    <p className="text-sm text-gray-600">
-                                                        Total: {winnersInGroup.length} Pemenang
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        </div>
+                                {Object.entries(groupedWinners).map(
+                                    ([groupKey, winnersInPrize]) => {
+                                        const first = winnersInPrize[0] || {};
+                                        // prize name comes from backend 'hadiah' column (from prizes table)
+                                        const prizeName =
+                                            first.hadiah || "Hadiah";
+                                        const jenisHadiah =
+                                            first.jenis_hadiah || "";
 
-                                        {/* Daftar Pemenang */}
-                                        <div className="bg-white">
-                                            <div className="divide-y divide-gray-200">
-                                                {winnersInGroup.map((winner, idx) => (
-                                                    <div
-                                                        key={winner.id || idx}
-                                                        className="p-4 hover:bg-gray-50 transition-colors"
-                                                    >
-                                                        <div className="flex items-start gap-4">
-                                                            {/* Nomor Urut */}
-                                                            <div className="flex-shrink-0">
-                                                                <div className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-white text-lg ${
-                                                                    idx === 0 ? "bg-yellow-500" :
-                                                                    idx === 1 ? "bg-gray-400" :
-                                                                    idx === 2 ? "bg-orange-600" :
-                                                                    "bg-blue-500"
-                                                                }`}>
-                                                                    #{idx + 1}
-                                                                </div>
-                                                            </div>
-
-                                                            {/* Info Pemenang */}
-                                                            <div className="flex-1 min-w-0">
-                                                                <div className="flex items-center gap-2 mb-2">
-                                                                    <span className="text-gray-500 text-xl">👤</span>
-                                                                    <p className="font-bold text-gray-800 text-xl">
-                                                                        {winner.nama || winner.full_name || 'Unknown'}
-                                                                    </p>
-                                                                </div>
-
-                                                                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
-                                                                    <div className="flex items-center gap-2">
-                                                                        <span className="text-gray-400">🎟️</span>
-                                                                        <span className="text-gray-600">Kupon:</span>
-                                                                        <span className="font-mono font-semibold text-blue-600">
-                                                                            {winner.kupon || winner.coupon_code || '-'}
-                                                                        </span>
-                                                                    </div>
-
-                                                                    <div className="flex items-center gap-2">
-                                                                        <span className="text-gray-400">🎪</span>
-                                                                        <span className="text-gray-600">Event:</span>
-                                                                        <span className="text-gray-700 font-medium">
-                                                                            {winner.event || winner.event_title || '-'}
-                                                                        </span>
-                                                                    </div>
-
-                                                                    <div className="flex items-center gap-2">
-                                                                        <span className="text-gray-400">📅</span>
-                                                                        <span className="text-gray-600">Menang:</span>
-                                                                        <span className="text-gray-700">
-                                                                            {formatDate(winner.tanggal || winner.won_at || winner.created_at)}
-                                                                        </span>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
+                                        return (
+                                            <div
+                                                key={groupKey}
+                                                className="border-2 border-gray-200 rounded-lg overflow-hidden"
+                                            >
+                                                {/* HEADER HADIAH */}
+                                                <div className="bg-gradient-to-r from-purple-100 to-blue-100 p-4 border-b-2 border-purple-300">
+                                                    <div className="flex items-center gap-3">
+                                                        <span className="text-3xl">
+                                                            🎁
+                                                        </span>
+                                                        <div>
+                                                            <h3 className="font-bold text-gray-800 text-xl">
+                                                                {jenisHadiah} -{" "}
+                                                                {prizeName}
+                                                            </h3>
+                                                            <p className="text-sm text-gray-600">
+                                                                Total:{" "}
+                                                                {
+                                                                    winnersInPrize.length
+                                                                }{" "}
+                                                                Pemenang
+                                                            </p>
                                                         </div>
                                                     </div>
-                                                ))}
+                                                </div>
+
+                                                {/* LIST PEMENANG */}
+                                                <div className="divide-y divide-gray-200">
+                                                    {winnersInPrize.map(
+                                                        (winner, idxWinner) => (
+                                                            <div
+                                                                key={idxWinner}
+                                                                className="p-4 hover:bg-gray-50 transition-colors"
+                                                            >
+                                                                <div className="flex items-start gap-4">
+                                                                    {/* NOMOR */}
+                                                                    <div className="flex-shrink-0">
+                                                                        <div
+                                                                            className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-white text-lg ${
+                                                                                idxWinner ===
+                                                                                0
+                                                                                    ? "bg-yellow-500"
+                                                                                    : idxWinner ===
+                                                                                      1
+                                                                                    ? "bg-gray-400"
+                                                                                    : idxWinner ===
+                                                                                      2
+                                                                                    ? "bg-orange-600"
+                                                                                    : "bg-blue-500"
+                                                                            }`}
+                                                                        >
+                                                                            #
+                                                                            {idxWinner +
+                                                                                1}
+                                                                        </div>
+                                                                    </div>
+
+                                                                    {/* INFO */}
+                                                                    <div className="flex-1 min-w-0">
+                                                                        <div className="flex items-center gap-2 mb-2">
+                                                                            <span className="text-gray-500 text-xl">
+                                                                                👤
+                                                                            </span>
+                                                                            <p className="font-bold text-gray-800 text-xl">
+                                                                                {winner.nama ||
+                                                                                    "Unknown"}
+                                                                            </p>
+                                                                        </div>
+
+                                                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
+                                                                            <div className="flex items-center gap-2">
+                                                                                🎟️
+                                                                                <span className="text-gray-600">
+                                                                                    Kupon:
+                                                                                </span>
+                                                                                <span className="font-mono font-semibold text-blue-600">
+                                                                                    {
+                                                                                        winner.kupon
+                                                                                    }
+                                                                                </span>
+                                                                            </div>
+
+                                                                            <div className="flex items-center gap-2">
+                                                                                {winner.mode ===
+                                                                                1
+                                                                                    ? "✋"
+                                                                                    : "🎲"}
+                                                                                <span className="text-gray-600">
+                                                                                    Mode:
+                                                                                </span>
+                                                                                <span
+                                                                                    className={
+                                                                                        winner.mode ===
+                                                                                        1
+                                                                                            ? "text-purple-600 font-medium"
+                                                                                            : "text-green-600 font-medium"
+                                                                                    }
+                                                                                >
+                                                                                    {winner.mode ===
+                                                                                    1
+                                                                                        ? "Manual"
+                                                                                        : "Random"}
+                                                                                </span>
+                                                                            </div>
+
+                                                                            <div className="flex items-center gap-2">
+                                                                                📅
+                                                                                <span className="text-gray-600">
+                                                                                    Menang:
+                                                                                </span>
+                                                                                <span className="text-gray-700">
+                                                                                    {formatDate(
+                                                                                        winner.tanggal
+                                                                                    )}
+                                                                                </span>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        )
+                                                    )}
+                                                </div>
                                             </div>
-                                        </div>
-                                    </div>
-                                ))}
+                                        );
+                                    }
+                                )}
                             </div>
                         )}
                     </div>

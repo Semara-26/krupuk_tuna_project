@@ -20,6 +20,9 @@ return new class extends Migration
             $table->unsignedBigInteger("prize_types_id");
             $table->foreign("prize_types_id")->references("id")->on("prize_types")->cascadeOnDelete()->cascadeOnUpdate();
             $table->datetime("won_at")->nullable();
+            $table->integer("mode_type");
+            $table->unsignedBigInteger("prizes_id");
+            $table->foreign("prizes_id")->references("id")->on("prizes")->cascadeOnDelete()->cascadeOnUpdate();
             $table->timestamps();
         });
     }

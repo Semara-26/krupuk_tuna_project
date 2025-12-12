@@ -18,16 +18,11 @@ class AdminEventPageController extends Controller
         $total_events = Events::all()->count();
         $next_events_num = $total_events + 1;
 
-        // Ambil event aktif beserta hadiahnya
-        $activeEvent = Events::with('prizes')
-            ->where('status', '0')
-            ->first();
-
+        $activeEvent = Events::with('prizes')->where('status', '0')->first();
         $prize_types = PrizeType::all();
 
-        // Data default yang akan dikirim ke Inertia
         $data = [
-            'prizeTypes' => $prize_types, // Selalu kirim ini biar aman untuk Modal Edit
+            'prizeTypes' => $prize_types,
             'undianTitle' => "Undian $next_events_num",
             'activeEvent' => null,
             'sisaPemenang' => 0
@@ -38,28 +33,22 @@ class AdminEventPageController extends Controller
             $current_total_winners = Winner::where("events_id", $activeEvent->id)->count();
             $total_winners_left = $total_winners - $current_total_winners;
 
-            // --- NEW: Hitung sisa hadiah per prize ---
+            // NEW LOGIC: Simply count how many winners each prize has in database
             $activeEvent->prizes->transform(function ($prize) use ($activeEvent) {
-
-                // Hitung berapa pemenang yang memilih prize_types_id ini
-                $used = Winner::where("events_id", $activeEvent->id)
-                    ->where("prize_types_id", $prize->prize_types_id)
+                // Count winners in database for this specific prize
+                $usedCount = Winner::where('events_id', $activeEvent->id)
+                    ->where('prizes_id', $prize->id)
                     ->count();
 
-                // Hitung sisa hadiah
-                $prize->remaining_qty = max(0, $prize->qty - $used);
+                // Calculate remaining
+                $prize->remaining_qty = max(0, $prize->qty - $usedCount);
 
                 return $prize;
             });
 
-            // Update data
             $data['activeEvent'] = $activeEvent;
             $data['sisaPemenang'] = $total_winners_left;
         }
-
-
-        // Ambil username admin (opsional, kalau mau ditampilkan)
-        // $admin = Auth::guard('admin')->user()->username; 
 
         return Inertia::render('Admin/Event', $data);
     }
@@ -69,16 +58,20 @@ class AdminEventPageController extends Controller
      */
     public function winners()
     {
-        // Query untuk mengambil data pemenang lengkap dengan nama user & event
         $winnersData = DB::table('winners')
             ->join('coupon_confirmations', 'winners.coupon_code', '=', 'coupon_confirmations.coupon_code')
             ->join('events', 'winners.events_id', '=', 'events.id')
+            ->join('prizes as p', 'p.id', '=', 'winners.prizes_id') // ← FIXED: Join on prizes_id
+            ->join('prize_types as pt', 'pt.id', '=', 'winners.prize_types_id')
             ->select(
                 'coupon_confirmations.full_name as nama',
                 'winners.coupon_code as kupon',
                 'events.title as event',
                 'winners.created_at as tanggal',
-                'winners.prize_types_id as tipe_hadiah' // 1 = Utama, 2 = Hiburan
+                'winners.prize_types_id as tipe_hadiah',
+                'p.prize_name as hadiah',
+                'winners.mode_type as mode',
+                'pt.name as jenis_hadiah'
             )
             ->orderBy('winners.created_at', 'desc')
             ->get();

@@ -11,6 +11,8 @@ class Winner extends Model
         "coupon_code",
         "events_id",
         "prize_types_id",
-        'won_at'
+        'won_at',
+        "mode_type",
+        "prizes_id"
     ];
 }

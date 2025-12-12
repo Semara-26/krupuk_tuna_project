@@ -25,7 +25,6 @@ class LiveDrawPageController extends Controller
                         ->where('status', '0') // Misal 0 itu aktif (sesuaikan!)
                         ->latest()
                         ->first();
-
         // 2. Cek apakah yang akses adalah Admin?
         $isAdmin = Auth::guard('admin')->check();
 

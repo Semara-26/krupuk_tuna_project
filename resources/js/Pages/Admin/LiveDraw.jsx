@@ -1,29 +1,22 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Head, usePage } from "@inertiajs/react"; // usePage buat cek auth
+import { Head, usePage } from "@inertiajs/react";
 import ReactConfetti from "react-confetti";
 import Swal from "sweetalert2";
 import axios from "axios";
 
 export default function LiveDraw({ event, prizes, isAdmin }) {
-    // Ambil info user login dari Inertia (Shared Props)
-    // const { auth } = usePage().props;
-    // const isAdmin = auth?.user?.role === 'admin' || auth?.admin; // Sesuaikan logic cek adminmu
-
-    // --- CONFIG STATE (Poin 5) ---
-    const [animDuration, setAnimDuration] = useState(3000); // Lama acak angka (ms)
-    const [intermissionDelay, setIntermissionDelay] = useState(3000); // Jeda antar pemenang (ms)
+    // --- CONFIG STATE ---
+    const [animDuration, setAnimDuration] = useState(3000);
+    const [intermissionDelay, setIntermissionDelay] = useState(3000);
 
     // --- STATE UTAMA ---
-    const [selectedPrizeType, setSelectedPrizeType] = useState(
-        prizes[0]?.prize_types_id || ""
-    );
+    const [selectedPrizeId, setSelectedPrizeId] = useState(prizes[0]?.id || "");
     const [isRolling, setIsRolling] = useState(false);
     const [displayNumber, setDisplayNumber] = useState("XXXXXXXX");
     const [currentWinner, setCurrentWinner] = useState(null);
     const [winnersHistory, setWinnersHistory] = useState([]);
     const [showConfetti, setShowConfetti] = useState(false);
 
-    // State buat nyimpen ID pemenang terakhir biar ga animasi ulang
     const lastWinnerIdRef = useRef(null);
     const rollingInterval = useRef(null);
 
@@ -48,14 +41,14 @@ export default function LiveDraw({ event, prizes, isAdmin }) {
 
     const stopVisualRolling = (winnerData) => {
         clearInterval(rollingInterval.current);
-        setDisplayNumber(winnerData.coupon_code); // Pastikan fieldnya 'coupon_code'
+        setDisplayNumber(winnerData.coupon_code);
         setCurrentWinner(winnerData);
         setIsRolling(false);
         setShowConfetti(true);
         setTimeout(() => setShowConfetti(false), 5000);
     };
 
-    // --- POIN 3: MIRRORING UTK USER (POLLING) ---
+    // --- MIRRORING FOR USER (POLLING) ---
     useEffect(() => {
         if (isAdmin) return;
 
@@ -71,14 +64,11 @@ export default function LiveDraw({ event, prizes, isAdmin }) {
 
                 if (winner.id === lastWinnerIdRef.current) return;
 
-                // Winner baru
                 lastWinnerIdRef.current = winner.id;
 
                 startVisualRolling();
                 setTimeout(() => {
                     stopVisualRolling(winner);
-
-                    // 🔥 ADD THIS TO FIX RIWAYAT TIDAK UPDATE
                     setWinnersHistory((prev) => [...prev, winner]);
                 }, 3000);
             } catch (error) {
@@ -89,11 +79,10 @@ export default function LiveDraw({ event, prizes, isAdmin }) {
         return () => clearInterval(pollInterval);
     }, [event?.id, isAdmin]);
 
-    // --- POIN 4: FUNGSI ADMIN AUTO LOOP ---
+    // --- ADMIN AUTO LOOP ---
     const handleStartAutoDraw = async () => {
-        if (!selectedPrizeType) return Swal.fire("Pilih Hadiah Dulu");
+        if (!selectedPrizeId) return Swal.fire("Pilih Hadiah Dulu");
 
-        // Konfirmasi awal
         const result = await Swal.fire({
             title: "Mulai Pengundian Otomatis?",
             text: `Sistem akan mengundi satu per satu dengan jeda ${
@@ -109,42 +98,32 @@ export default function LiveDraw({ event, prizes, isAdmin }) {
 
         let keepDrawing = true;
 
-        // LOOPING SAMPAI HABIS / ERROR
         while (keepDrawing) {
             try {
-                // 1. Mulai Visual
                 startVisualRolling();
-
-                // --- PERBAIKAN LOGIC PARALEL (Biar sesuai request temenmu) ---
-                // Kita jalanin Timer Animasi & Request API secara BERSAMAAN
-                // Jadi API di-hit saat animasi sedang jalan.
 
                 const animationPromise = new Promise((r) =>
                     setTimeout(r, animDuration)
                 );
 
-                // Request API (langsung jalan, gak nunggu delay dulu)
+                // CHANGED: Send prizes_id instead of prize_types_id
                 const apiPromise = axios.post("/draw-winner", {
                     event_id: event.id,
-                    prize_types_id: selectedPrizeType,
+                    prizes_id: Number(selectedPrizeId),
                 });
 
-                // Tunggu keduanya selesai (paling lambat)
                 const [_, res] = await Promise.all([
                     animationPromise,
                     apiPromise,
                 ]);
-                // -------------------------------------------------------------
 
-                // 3. Tampilkan Pemenang
                 const newWinner = res.data.winner;
                 stopVisualRolling(newWinner);
                 lastWinnerIdRef.current = newWinner.id;
                 setWinnersHistory((prev) => [...prev, newWinner]);
 
-                // 4. Cek Sisa (Dari response backend)
                 if (res.data.remaining <= 0) {
-                    keepDrawing = false; // Stop loop
+                    keepDrawing = false;
                     await Swal.fire(
                         "Selesai!",
                         "Semua hadiah untuk kategori ini sudah habis.",
@@ -153,39 +132,33 @@ export default function LiveDraw({ event, prizes, isAdmin }) {
                     break;
                 }
 
-                // 5. Delay Intermission (Jeda antar undian)
                 await new Promise((r) => setTimeout(r, intermissionDelay));
             } catch (error) {
                 console.log("Error response:", error.response);
 
-                // 1. Matikan Loop (Wajib)
                 keepDrawing = false;
 
-                // 2. Siapkan Pesan
                 const errorMessage =
                     error.response?.data?.message ||
                     "Terjadi kesalahan sistem.";
                 const isDataEmpty = error.response?.status === 404;
 
-                // 3. Tampilkan Popup & Reload setelah klik OK
                 Swal.fire({
                     icon: isDataEmpty ? "warning" : "error",
                     title: isDataEmpty ? "Perhatian" : "Gagal",
                     text: errorMessage,
                     confirmButtonText: "OK, Reset",
                 }).then((result) => {
-                    // Kode ini baru jalan SETELAH admin klik tombol OK
                     if (result.isConfirmed || result.isDismissed) {
-                        window.location.reload(); // Refresh halaman biar bersih
+                        window.location.reload();
                     }
                 });
             }
         }
     };
 
-    // Helper cari nama hadiah
     const currentPrizeObj = prizes.find(
-        (p) => p.prize_types_id == selectedPrizeType
+        (p) => p.id === Number(selectedPrizeId)
     );
 
     return (
@@ -193,7 +166,6 @@ export default function LiveDraw({ event, prizes, isAdmin }) {
             <Head title={`Live Draw - ${event.title}`} />
             {showConfetti && <ReactConfetti recycle={true} />}
 
-            {/* HEADER & LOGO (Sama kayak code lama mu) */}
             <div className="w-full p-6 flex items-center z-20 relative">
                 <img
                     src="/images/DESIGN LOGO RAJATUNA.png"
@@ -202,15 +174,12 @@ export default function LiveDraw({ event, prizes, isAdmin }) {
                 />
             </div>
 
-            {/* WRAPPER UTAMA: Ganti Grid jadi Flex biar lebih fleksibel */}
             <div className="flex-grow w-full px-4 lg:px-8 z-10 -mt-10 flex flex-col lg:flex-row items-start gap-6">
-                {/* === KOLOM KIRI (Area Undian Utama) === */}
-                {/* Pakai 'flex-1' biar dia ambil semua sisa ruang yang ada (Dominan) */}
                 <div className="flex-1 flex flex-col items-center w-full min-w-0 pt-4">
                     <h1 className="text-3xl md:text-5xl font-black text-yellow-400 uppercase tracking-widest mb-6 text-center drop-shadow-lg">
                         {event.title}
                     </h1>
-                    {/* 1. Judul Hadiah */}
+
                     <div className="mb-10 text-center">
                         <p className="text-slate-400 text-xl mb-2 uppercase tracking-[0.2em]">
                             Memperebutkan Hadiah:
@@ -222,7 +191,6 @@ export default function LiveDraw({ event, prizes, isAdmin }) {
                         </div>
                     </div>
 
-                    {/* 2. Kotak Nomor */}
                     <div className="bg-white text-slate-900 rounded-3xl p-16 shadow-[0_0_50px_rgba(255,255,255,0.1)] border-8 border-slate-700 mb-8 w-full max-w-5xl relative overflow-hidden text-center">
                         <div
                             className={`font-mono font-black tracking-widest text-center transition-all ${
@@ -235,7 +203,6 @@ export default function LiveDraw({ event, prizes, isAdmin }) {
                         </div>
                     </div>
 
-                    {/* 3. Data Pemenang (Muncul dibawah kotak) */}
                     {currentWinner && !isRolling && (
                         <div className="bg-green-600 border-4 border-green-400 rounded-2xl p-8 mb-8 text-center animate-bounce-in shadow-2xl w-full max-w-3xl text-white">
                             <h2 className="text-2xl font-bold mb-2 uppercase">
@@ -253,11 +220,9 @@ export default function LiveDraw({ event, prizes, isAdmin }) {
                         </div>
                     )}
 
-                    {/* 4. Kontrol Admin (HANYA MUNCUL JIKA ADMIN) */}
                     {isAdmin ? (
                         <div className="bg-slate-800/80 p-6 rounded-2xl backdrop-blur-md border border-slate-600 w-full max-w-4xl">
                             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
-                                {/* Input Animasi */}
                                 <div>
                                     <label className="text-xs text-slate-400 uppercase font-bold">
                                         Animasi (ms)
@@ -273,7 +238,6 @@ export default function LiveDraw({ event, prizes, isAdmin }) {
                                         className="w-full bg-slate-700 text-white rounded px-2 py-2"
                                     />
                                 </div>
-                                {/* Input Jeda */}
                                 <div>
                                     <label className="text-xs text-slate-400 uppercase font-bold">
                                         Jeda (ms)
@@ -289,17 +253,14 @@ export default function LiveDraw({ event, prizes, isAdmin }) {
                                         className="w-full bg-slate-700 text-white rounded px-2 py-2"
                                     />
                                 </div>
-                                {/* Pilih Hadiah */}
                                 <div>
                                     <label className="text-xs text-slate-400 uppercase font-bold">
                                         Hadiah
                                     </label>
                                     <select
-                                        value={selectedPrizeType}
+                                        value={selectedPrizeId}
                                         onChange={(e) => {
-                                            setSelectedPrizeType(
-                                                parseInt(e.target.value)
-                                            );
+                                            setSelectedPrizeId(e.target.value);
                                             setCurrentWinner(null);
                                             setDisplayNumber("XXXXXXXX");
                                         }}
@@ -307,16 +268,12 @@ export default function LiveDraw({ event, prizes, isAdmin }) {
                                         className="w-full bg-slate-700 text-white rounded px-2 py-2"
                                     >
                                         {prizes.map((p) => (
-                                            <option
-                                                key={p.id}
-                                                value={p.prize_types_id}
-                                            >
+                                            <option key={p.id} value={p.id}>
                                                 {p.prize_name}
                                             </option>
                                         ))}
                                     </select>
                                 </div>
-                                {/* Tombol Auto Loop */}
                                 <button
                                     onClick={handleStartAutoDraw}
                                     disabled={isRolling}
@@ -337,8 +294,6 @@ export default function LiveDraw({ event, prizes, isAdmin }) {
                     )}
                 </div>
 
-                {/* === KOLOM KANAN (Riwayat Pemenang) === */}
-                {/* Fix Width w-96 (sekitar 380px), dan flex-none biar gak melar/menyusut */}
                 <div className="w-full lg:w-96 flex-none bg-slate-800/50 backdrop-blur-sm rounded-3xl border border-slate-700 p-6 h-fit max-h-[80vh] overflow-y-auto custom-scrollbar shadow-2xl sticky top-4">
                     <h3 className="text-yellow-400 font-black text-xl mb-6 flex items-center gap-2 border-b border-slate-600 pb-4 sticky top-0 bg-slate-800/50 backdrop-blur-md z-10">
                         📜 Riwayat Pemenang
