@@ -40,9 +40,8 @@ export default function Welcome({ auth, terakhirInput }) {
     };
 
     const bannerImages = [
-        "/images/image.png",
-        "/images/image.png",
-        "/images/image.png",
+       "/images/productImage1.jpeg",
+       "/images/productImage2.jpeg",
     ];
 
     return (
