@@ -78,14 +78,14 @@ export default function Welcome({ auth, terakhirInput }) {
                 </Swiper>
             </div>
 
-            <div className="max-w-4xl mx-auto py-16 px-4">
-                <div className="max-w-4xl mx-auto py-16 px-4">
-                    <h2 className="text-3xl font-bold text-center text-gray-900 mb-6">
+            {/* <div className="max-w-4xl mx-auto py-16 px-4">
+                <div className="max-w-4xl mx-auto py-16 px-4"> */}
+                    {/* <h2 className="text-3xl font-bold text-center text-gray-900 mb-6">
                         Kerupuk Tuna Premium
-                    </h2>
-                    <div className="text-gray-700 text-base sm:text-lg leading-relaxed space-y-4 text-center">
+                    </h2> */}
+                    {/* <div className="text-gray-700 text-base sm:text-lg leading-relaxed space-y-4 text-center"> */}
                         {/* Teks diganti dengan copy baru */}
-                        <p>
+                        {/* <p>
                             Rasakan sensasi gurih dan renyah tak tertandingi
                             dari Kerupuk Tuna Premium kami. Dibuat dari 100%
                             daging ikan tuna segar pilihan, setiap gigitan
@@ -93,8 +93,8 @@ export default function Welcome({ auth, terakhirInput }) {
                             protein. Kami berkomitmen menyajikan camilan
                             berkualitas tinggi, diolah secara higienis tanpa
                             tambahan bahan pengawet buatan.
-                        </p>
-                        <p className="font-medium">
+                        </p> */}
+                        {/* <p className="font-medium">
                             Sempurna untuk menjadi teman setia hidangan utama
                             Anda, mulai dari nasi goreng, soto, hingga bakso,
                             atau dinikmati langsung sebagai camilan premium saat
@@ -104,10 +104,10 @@ export default function Welcome({ auth, terakhirInput }) {
                                 kode kupon spesial
                             </strong>{" "}
                             Anda di bawah ini!
-                        </p>
-                    </div>
+                        </p> */}
+                    {/* </div>
                 </div>
-            </div>
+            </div> */}
 
             {/* <div className="max-w-7xl mx-auto py-16 px-4">
                 <h2 className="text-3xl font-bold text-center text-gray-900 mb-8">

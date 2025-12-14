@@ -5,11 +5,12 @@ import Dropdown from "@/Components/Dropdown";
 import NavLink from "@/Components/NavLink";
 import ResponsiveNavLink from "@/Components/ResponsiveNavLink";
 import ActivityPopup from "@/Components/ActivityPopup";
-import { Link } from "@inertiajs/react";
+import { Link, usePage } from "@inertiajs/react";
 import Lottie from "lottie-react";
 import fishJumping from "./Fish Jumping.json";
 import { faker } from "@faker-js/faker";
-
+import AboutProductModal from "@/Components/AboutProductModal";
+import EventInfoModal from "@/Components/EventInfoModal";
 
 function censorName(name) {
     if (!name) return name;
@@ -21,7 +22,6 @@ function censorName(name) {
     const stars = "*".repeat(Math.max(1, plain.length - 3));
     return `${first}${stars}${lastTwo}`;
 }
-
 
 const activityActions = {
     kupon: (count) => `baru saja menukarkan ${count} kupon!`,
@@ -47,11 +47,16 @@ export default function AuthenticatedLayout({
     children,
     layoutVariant = "default",
 }) {
+    const { globalEvent } = usePage().props;
     const [showingNavigationDropdown, setShowingNavigationDropdown] =
         useState(false);
     const user = auth ? auth.user : null;
 
     const [currentActivity, setCurrentActivity] = useState(null);
+
+    const [showAboutModal, setShowAboutModal] = useState(false);
+    const [showEventInfoModal, setShowEventInfoModal] = useState(false);
+    const [showScrollTop, setShowScrollTop] = useState(false);
 
     useEffect(() => {
         // Fungsi untuk ganti notifikasi
@@ -102,12 +107,51 @@ export default function AuthenticatedLayout({
         // 2. Ganti notifikasi setiap 30 detik
         const interval = setInterval(cycleActivity, 30000);
 
+        // debug====
+        // console.log("=== DEBUG POPUP EVENT ===");
+        // console.log("Data Event:", globalEvent); // Apakah null?
+        // console.log(
+        //     "Status User:",
+        //     user ? "Login sebagai " + user.name : "Guest / Belum Login"
+        // );
+
+        // let eventTimer;
+
+        // // KITA HAPUS SYARAT '!user' SEMENTARA BIAR MUNCUL TERUS BUAT NGETES
+        // if (globalEvent) {
+        //     console.log("✅ Syarat terpenuhi, timer dijalankan...");
+        //     eventTimer = setTimeout(() => {
+        //         setShowEventInfoModal(true);
+        //     }, 1000);
+        // } else {
+        //     console.log("❌ Pop-up gagal: Data Event kosong.");
+        // }
+        // debug=====
+
+        let eventTimer;
+        if (globalEvent && !user) {
+            eventTimer = setTimeout(() => {
+                setShowEventInfoModal(true);
+            }, 1000);
+        }
+
+        // 3. Scroll Listener
+        const handleScroll = () => {
+            setShowScrollTop(window.scrollY > 300);
+        };
+        window.addEventListener("scroll", handleScroll);
+
         // Cleanup (wajib)
         return () => {
             clearTimeout(initialTimeout);
             clearInterval(interval);
+            if (eventTimer) clearTimeout(eventTimer);
+            window.removeEventListener("scroll", handleScroll);
         };
-    }, []); // [] = Hanya jalan sekali
+    }, [user, globalEvent]); // [] = Hanya jalan sekali
+    const scrollToTop = () => {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+    };
 
     return (
         <div
@@ -134,18 +178,14 @@ export default function AuthenticatedLayout({
                                         >
                                             Home
                                         </NavLink>
-                                        {/* <NavLink
-                                            href={route("lacak")}
-                                            active={route().current("lacak")}
+                                        <button
+                                            onClick={() =>
+                                                setShowAboutModal(true)
+                                            }
+                                            className="inline-flex items-center px-1 pt-1 border-b-2 border-transparent text-sm font-medium leading-5 text-gray-500 hover:text-gray-700 hover:border-gray-300 focus:outline-none focus:text-gray-700 focus:border-gray-300 transition duration-150 ease-in-out"
                                         >
-                                            Lacak
-                                        </NavLink>
-                                        {/* <NavLink
-                                    href={route("undian")}
-                                    active={route().current("undian")}
-                                >
-                                    Undian
-                                </NavLink> */} 
+                                            About Product
+                                        </button>
                                     </>
                                 )}
                             </div>
@@ -255,6 +295,16 @@ export default function AuthenticatedLayout({
                                 >
                                     Home
                                 </ResponsiveNavLink>
+
+                                <button
+                                    onClick={() => {
+                                        setShowAboutModal(true);
+                                        setShowingNavigationDropdown(false);
+                                    }}
+                                    className="w-full text-start block ps-3 pe-4 py-2 border-l-4 border-transparent text-base font-medium text-gray-600 hover:text-gray-800 hover:bg-gray-50 hover:border-gray-300 focus:outline-none transition duration-150 ease-in-out"
+                                >
+                                    About Product
+                                </button>
                                 {/* <ResponsiveNavLink
                                     href={route("lacak")}
                                     active={route().current("lacak")}
@@ -274,14 +324,51 @@ export default function AuthenticatedLayout({
             </nav>
 
             <main className="flex-grow">{children}</main>
-            {layoutVariant !== "undian" && (
-                <>
-                    <Footer />
-                </>
-            )}
+            {layoutVariant !== "undian" && <Footer />}
+            {/* === GLOBAL COMPONENTS === */}
+
+            {/* 1. Activity Popup (Kiri Bawah) */}
             <ActivityPopup
                 activity={currentActivity}
-                onHide={() => setCurrentActivity(null)} // Biar bisa ditutup manual
+                onHide={() => setCurrentActivity(null)}
+            />
+
+            {/* 2. Scroll To Top Button (Kanan Bawah) */}
+            <button
+                onClick={scrollToTop}
+                className={`fixed bottom-6 right-6 bg-yellow-500 hover:bg-yellow-400 text-slate-900 p-3 rounded-full shadow-2xl z-50 transition-all duration-300 transform ${
+                    showScrollTop
+                        ? "translate-y-0 opacity-100 scale-100"
+                        : "translate-y-20 opacity-0 scale-75"
+                }`}
+            >
+                <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-6 w-6"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                >
+                    <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={3}
+                        d="M5 10l7-7m0 0l7 7m-7-7v18"
+                    />
+                </svg>
+            </button>
+
+            {/* 3. MODAL: About Product (Modular) */}
+            <AboutProductModal
+                show={showAboutModal}
+                onClose={() => setShowAboutModal(false)}
+            />
+
+            {/* 4. MODAL: Event Info Dinamis (Modular) */}
+            <EventInfoModal
+                show={showEventInfoModal}
+                onClose={() => setShowEventInfoModal(false)}
+                event={globalEvent}
             />
         </div>
     );
